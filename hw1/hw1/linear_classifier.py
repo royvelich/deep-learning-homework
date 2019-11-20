@@ -4,6 +4,8 @@ from torch.utils.data import DataLoader
 from collections import namedtuple
 
 from .losses import ClassifierLoss
+import hw1.transforms as hw1tf
+
 
 
 class LinearClassifier(object):
@@ -22,10 +24,7 @@ class LinearClassifier(object):
         #  Create weights tensor of appropriate dimensions
         #  Initialize it from a normal dist with zero mean and the given std.
 
-        self.weights = None
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        self.weights = torch.randn(n_features + 1, n_classes) * weight_std
 
     def predict(self, x: Tensor):
         """
@@ -44,10 +43,14 @@ class LinearClassifier(object):
         #  Calculate the score for each class using the weights and
         #  return the class y_pred with the highest score.
 
-        y_pred, class_scores = None, None
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        bias_trick = hw1tf.BiasTrick()
+        x = bias_trick(x)
+        y_pred = torch.Tensor(x.size(0))
+        S = torch.mm(x, self.weights)
+        class_scores = S
+        for i in range(x.size(0)):
+            current_class_scores = S[i, :]
+            y_pred[i] = current_class_scores.argmax()
 
         return y_pred, class_scores
 
@@ -67,10 +70,7 @@ class LinearClassifier(object):
         #  labels to the ground truth labels to obtain the accuracy (in %).
         #  Do not use an explicit loop.
 
-        acc = None
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        acc = float(torch.sum(y == y_pred)) / float(y.size(0))
 
         return acc * 100
 
