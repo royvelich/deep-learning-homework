@@ -11,9 +11,7 @@ class TensorView(object):
 
     def __call__(self, tensor: torch.Tensor):
         # TODO: Use Tensor.view() to implement the transform.
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        return tensor.view(*self.view_dims)
 
 
 class InvertColors(object):
@@ -27,9 +25,7 @@ class InvertColors(object):
         :return: The image with inverted colors.
         """
         # TODO: Invert the colors of the input image.
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        return x.neg() + 1
 
 
 class FlipUpDown(object):
@@ -39,9 +35,7 @@ class FlipUpDown(object):
         :return: The image, flipped around the horizontal axis.
         """
         # TODO: Flip the input image so that up is down.
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        return x.flip(1)
 
 
 class BiasTrick(object):

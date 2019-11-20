@@ -3,8 +3,8 @@ import math
 import numpy as np
 import torch
 import torch.utils.data.sampler as sampler
+import torch.utils.data.dataloader as dataloader
 from torch.utils.data import Dataset
-
 
 def create_train_validation_loaders(dataset: Dataset, validation_ratio,
                                     batch_size=100, num_workers=2):
@@ -30,9 +30,19 @@ def create_train_validation_loaders(dataset: Dataset, validation_ratio,
     #     from the dataset.
     #  Hint: you can specify a Sampler class for the `DataLoader` instance
     #  you create.
-    # ====== YOUR CODE: ======
-    raise NotImplementedError()
-    # ========================
+
+    dataset_size = len(dataset)
+    indices = list(range(dataset_size))
+    validation_size = int(dataset_size * validation_ratio)
+
+    validation_indices = indices[:validation_size]
+    train_indices = indices[validation_size:]
+
+    validation_sampler = sampler.SubsetRandomSampler(validation_indices)
+    train_sampler = sampler.SubsetRandomSampler(train_indices)
+
+    dl_valid = dataloader.DataLoader(dataset, batch_size=batch_size, sampler=validation_sampler, num_workers=num_workers)
+    dl_train = dataloader.DataLoader(dataset, batch_size=batch_size, sampler=train_sampler, num_workers=num_workers)
 
     return dl_train, dl_valid
 

@@ -1,5 +1,5 @@
 import numpy as np
-
+import random
 import torch
 from torch.utils.data import Dataset
 
@@ -22,6 +22,10 @@ class RandomImageDataset(Dataset):
         self.num_samples = num_samples
         self.image_dim = (C, W, H)
 
+        self.tuple_dict = {}
+        for index in range(self.num_samples):
+            self.tuple_dict[index] = (torch.tensor(np.random.randint(256, size=self.image_dim)), random.randint(0, num_classes - 1))
+
     def __getitem__(self, index):
         """
         Returns a labeled sample.
@@ -34,18 +38,13 @@ class RandomImageDataset(Dataset):
         #  Try to make sure to always return the same image for the
         #  same index (make it deterministic per index), but don't mess-up
         #  the random state outside this method.
-
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        return self.tuple_dict[index]
 
     def __len__(self):
         """
         :return: Number of samples in this dataset.
         """
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        return self.num_samples
 
 
 class SubsetDataset(Dataset):
@@ -71,12 +70,11 @@ class SubsetDataset(Dataset):
         #  Return the item at index + offset from the source dataset.
         #  Raise an IndexError if index is out of bounds.
 
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        if index >= self.subset_len:
+            raise IndexError("subset index out of bounds")
+
+        return self.source_dataset[self.offset + index]
 
     def __len__(self):
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        return self.subset_len
 
