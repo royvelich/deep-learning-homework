@@ -3,37 +3,24 @@ import torch
 from torch import Tensor
 
 
-# mat = torch.randn(64, 512)
+left = torch.range(0, 3).unsqueeze(0)
+right = torch.range(2, 5).unsqueeze(0)
 
-# mat2 = torch.randn(2, 3, 4)
-#
-# mat2 = torch.randint(low=0, high=10, size=(1, 12)).to(dtype=float)
-#
-# # bla = mat2.size(0)
-#
-# dims = mat2.size()
-# # dims = dims[:len(dims)-1]
-#
-# first_dims_sizes = dims[:len(dims)-1]
-# last_dim_index = len(dims) - 1
-#
-# y = torch.ones(*first_dims_sizes).unsqueeze(last_dim_index).to(dtype=float)
-#
-# z = torch.cat((y,mat2), dim=last_dim_index).to(dtype=float)
+bibi = torch.cat((left,right), dim=0)
 
+bibi = torch.cat((left,right),dim=1)
 
+mat = torch.Tensor([[-1,2,3],[5,6,7],[7,-8,9]])
 
+mat[[0,1,2],[1,1,1]] += 3
 
+dodo = torch.Tensor([0,2,1]).unsqueeze(1)
 
+indices = torch.Tensor([[0],[2],[1]]).to(dtype=int)
+values = torch.gather(mat,1,indices)
+mat2 = values.expand(3,6)
 
-
-
-# mat2 = torch.randn(2, 3, 4)
-mat2 = torch.randint(low=0, high=10, size=(1, 12))
-dims = mat2.size()
-first_dims = dims[:len(dims)-1]
-first_dims = [*first_dims, 1]
-last_dim_index = len(dims) - 1
-ones = torch.ones(*first_dims).to(dtype=mat2.dtype)
-z = torch.cat((ones,mat2), dim=last_dim_index)
+mat2_sub = mat2 + 3
+max = torch.max(mat2_sub, torch.zeros_like(mat2_sub))
+yoyo = torch.sum(max,dim=1)
 bla = 5

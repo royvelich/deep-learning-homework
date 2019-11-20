@@ -50,16 +50,14 @@ class SVMHingeLoss(ClassifierLoss):
         #    Hint: Create a matrix M where M[i,j] is the margin-loss
         #    for sample i and class j (i.e. s_j - s_{y_i} + delta).
 
-        loss = None
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        indices = torch.Tensor(y.to(dtype=torch.float32).unsqueeze(1)).to(dtype=int)
+        ground_truth_scores = torch.gather(x_scores, 1, indices).expand(*x_scores.size())
+        rows = torch.arange(0, x_scores.size(0)).unsqueeze(0).to(dtype=int)
+        columns = y.unsqueeze(0).to(dtype=int)
+        x_scores[rows,columns] -= self.delta
+        loss = torch.sum(torch.max(torch.sub(x_scores + self.delta, ground_truth_scores), torch.zeros_like(x_scores))) / float(x_scores.size(0))
 
         # TODO: Save what you need for gradient calculation in self.grad_ctx
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
-
         return loss
 
     def grad(self):
