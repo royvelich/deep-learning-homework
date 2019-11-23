@@ -1,6 +1,6 @@
 import abc
 import torch
-
+import hw1.transforms as hw1tf
 
 class ClassifierLoss(abc.ABC):
     """
@@ -52,12 +52,24 @@ class SVMHingeLoss(ClassifierLoss):
 
         indices = torch.Tensor(y.to(dtype=torch.float32).unsqueeze(1)).to(dtype=int)
         ground_truth_scores = torch.gather(x_scores, 1, indices).expand(*x_scores.size())
+
         rows = torch.arange(0, x_scores.size(0)).unsqueeze(0).to(dtype=int)
         columns = y.unsqueeze(0).to(dtype=int)
-        x_scores[rows,columns] -= self.delta
-        loss = torch.sum(torch.max(torch.sub(x_scores + self.delta, ground_truth_scores), torch.zeros_like(x_scores))) / float(x_scores.size(0))
 
+        M = x_scores.clone()
+        M[rows, columns] = M[rows, columns].clone() - self.delta
+        M = torch.sub(M.clone() + self.delta, ground_truth_scores)
+        M = torch.max(M.clone(), torch.zeros_like(x_scores.clone()))
+
+        loss = torch.sum(M) / float(x_scores.size(0))
+
+        self.grad_ctx['M'] = M
+        self.grad_ctx['x'] = x
+        self.grad_ctx['y'] = y
+        self.grad_ctx['rows'] = rows
+        self.grad_ctx['columns'] = columns
         # TODO: Save what you need for gradient calculation in self.grad_ctx
+
         return loss
 
     def grad(self):
@@ -71,9 +83,26 @@ class SVMHingeLoss(ClassifierLoss):
         #  Same notes as above. Hint: Use the matrix M from above, based on
         #  it create a matrix G such that X^T * G is the gradient.
 
-        grad = None
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        M = self.grad_ctx['M']
+        x = self.grad_ctx['x']
+        y = self.grad_ctx['y']
+        rows = self.grad_ctx['rows']
+        columns = self.grad_ctx['columns']
 
+        bias_trick = hw1tf.BiasTrick()
+        x = bias_trick(x)
+
+        M2 = (M > 0).to(dtype=torch.float32)
+
+        # print(M2)
+
+        k = M2.sum(dim=1)
+        # print(k)
+
+        M2[rows, columns] = M2[rows, columns].clone() * (-k)
+
+        print(y)
+        print(M2)
+
+        grad = torch.mm(x.transpose(0,1), M2) / M.size(0)
         return grad

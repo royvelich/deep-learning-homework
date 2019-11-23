@@ -2,6 +2,15 @@ import numpy as np
 import torch
 from torch import Tensor
 
+mat = torch.Tensor([[1,2,3],[3,4,5]])
+
+mat_t = mat.transpose(0,1)
+
+yo = mat.sum(dim=1)
+
+B = (mat >= 2).to(dtype=torch.float32)
+
+mat[[0,1],[0,1]] *= torch.Tensor([2,3])
 
 left = torch.range(0, 3).unsqueeze(0)
 right = torch.range(2, 5).unsqueeze(0)
