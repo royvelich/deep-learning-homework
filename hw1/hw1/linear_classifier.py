@@ -24,7 +24,7 @@ class LinearClassifier(object):
         #  Create weights tensor of appropriate dimensions
         #  Initialize it from a normal dist with zero mean and the given std.
 
-        self.weights = torch.randn(n_features + 1, n_classes) * weight_std
+        self.weights = torch.randn(n_features, n_classes) * weight_std
 
     def predict(self, x: Tensor):
         """
@@ -43,8 +43,6 @@ class LinearClassifier(object):
         #  Calculate the score for each class using the weights and
         #  return the class y_pred with the highest score.
 
-        bias_trick = hw1tf.BiasTrick()
-        x = bias_trick(x)
         y_pred = torch.Tensor(x.size(0))
         S = torch.mm(x, self.weights)
         class_scores = S
@@ -87,7 +85,7 @@ class LinearClassifier(object):
         print('Training', end='')
         for epoch_idx in range(max_epochs):
             total_correct = 0
-            average_loss = 0
+            total_loss = 0
 
             # TODO:
             #  Implement model training loop.
@@ -100,9 +98,29 @@ class LinearClassifier(object):
             #  4. Don't forget to add a regularization term to the loss,
             #     using the weight_decay parameter.
 
-            # ====== YOUR CODE: ======
-            raise NotImplementedError()
-            # ========================
+            for idx, (images, classes) in enumerate(dl_train):
+                y_pred, class_scores = self.predict(images)
+                current_loss = loss_fn.loss(images, classes, class_scores, y_pred)
+                current_accuracy = self.evaluate_accuracy(classes, y_pred)
+                total_loss = total_loss + current_loss
+                total_correct = total_correct + current_accuracy
+                self.weights = self.weights - learn_rate*loss_fn.grad() - weight_decay * self.weights
+
+            total_correct_valid = 0
+            total_loss_valid = 0
+            for idx, (images_valid, classes_valid) in enumerate(dl_valid):
+                y_pred_valid, class_scores_valid = self.predict(images_valid)
+                current_loss_valid = loss_fn.loss(images_valid, classes_valid, class_scores_valid, y_pred_valid)
+                current_accuracy_valid = self.evaluate_accuracy(classes_valid, y_pred_valid)
+                total_loss_valid = total_loss_valid + current_loss_valid
+                total_correct_valid = total_correct_valid + current_accuracy_valid
+
+            valid_res.loss.append(total_loss_valid / len(dl_valid.dataset))
+            valid_res.accuracy.append(total_correct_valid / len(dl_valid.dataset))
+
+            train_res.loss.append(total_loss / len(dl_train.dataset))
+            train_res.accuracy.append(total_correct / len(dl_train.dataset))
+
             print('.', end='')
 
         print('')
@@ -121,9 +139,13 @@ class LinearClassifier(object):
         #  Convert the weights matrix into a tensor of images.
         #  The output shape should be (n_classes, C, H, W).
 
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        print(self.weights.size())
+
+        rows = self.weights.size()[0]
+        cols = self.weights.size()[1]
+
+        w_images = self.weights[list(range(1, rows))]
+        w_images = w_images.reshape(cols, img_shape[0], img_shape[1], img_shape[2])
 
         return w_images
 
@@ -134,8 +156,9 @@ def hyperparams():
     # TODO:
     #  Manually tune the hyperparameters to get the training accuracy test
     #  to pass.
-    # ====== YOUR CODE: ======
-    raise NotImplementedError()
-    # ========================
+
+    hp['weight_std'] = 1
+    hp['learn_rate'] = 0.2
+    hp['weight_decay'] = 0.01
 
     return hp
