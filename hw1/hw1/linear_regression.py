@@ -138,12 +138,21 @@ def top_correlated_features(df: DataFrame, target_feature, n=5):
     """
 
     # TODO: Calculate correlations with target and sort features by it
+    results = []
 
-    # ====== YOUR CODE: ======
-    raise NotImplementedError()
-    # ========================
+    target_col = df[target_feature]
+    for current_feature in df.columns:
+        current_col = df[current_feature]
+        if current_feature is not target_feature:
+            current_corr = target_col.corr(current_col)
+            results.append([current_corr, current_feature])
 
-    return top_n_features, top_n_corr
+    results.sort(reverse=True, key=lambda x: abs(x[0]))
+
+    top_n_corr = [i[0] for i in results]
+    top_n_features = [i[1] for i in results]
+
+    return top_n_features[:n], top_n_corr[:n]
 
 
 def mse_score(y: np.ndarray, y_pred: np.ndarray):
