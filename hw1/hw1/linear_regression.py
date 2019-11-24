@@ -200,8 +200,22 @@ def cv_best_hyperparams(model: BaseEstimator, X, y, k_folds,
     #    names as keys.
     #  - You can use MSE or R^2 as a score.
 
-    # ====== YOUR CODE: ======
-    raise NotImplementedError()
-    # ========================
+    from sklearn.model_selection import cross_validate
+    best_score = None
+    best_lambda = None
+    best_degree = None
+    for current_degree in degree_range:
+        for current_lambda in lambda_range:
+            model.set_params(linearregressor__reg_lambda=current_lambda,bostonfeaturestransformer__degree=current_degree)
+            scores = cross_validate(model, X, y, cv=k_folds, scoring=('r2'))
+            if best_score is None:
+                best_score = np.average(scores['test_score'])
+            elif np.average(scores['test_score']) > best_score:
+                best_degree = current_degree
+                best_lambda = current_lambda
+                best_score = np.average(scores['test_score'])
 
+    best_params = {}
+    best_params['bostonfeaturestransformer__degree'] = best_degree
+    best_params['linearregressor__reg_lambda'] = best_lambda
     return best_params
