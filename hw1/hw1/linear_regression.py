@@ -28,11 +28,7 @@ class LinearRegressor(BaseEstimator, RegressorMixin):
 
         # TODO: Calculate the model prediction, y_pred
 
-        y_pred = None
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
-
+        y_pred = np.matmul(X, np.transpose(self.weights_))
         return y_pred
 
     def fit(self, X, y):
@@ -47,11 +43,9 @@ class LinearRegressor(BaseEstimator, RegressorMixin):
         #  Calculate the optimal weights using the closed-form solution
         #  Use only numpy functions. Don't forget regularization.
 
-        w_opt = None
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
-
+        XX_t = np.matmul(np.transpose(X), X)
+        I_lambda = self.reg_lambda * np.identity(XX_t.shape[0])
+        w_opt = np.matmul(np.matmul(np.linalg.inv(XX_t + I_lambda), np.transpose(X)), y)
         self.weights_ = w_opt
         return self
 
@@ -75,11 +69,8 @@ class BiasTrickTransformer(BaseEstimator, TransformerMixin):
         #  Add bias term to X as the first feature.
         #  See np.hstack().
 
-        xb = None
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
-
+        ones = np.expand_dims(np.ones(X.shape[0]), axis=1)
+        xb = np.hstack((ones, X))
         return xb
 
 
@@ -93,9 +84,6 @@ class BostonFeaturesTransformer(BaseEstimator, TransformerMixin):
 
         # TODO: Your custom initialization, if needed
         # Add any hyperparameters you need and save them as above
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
 
     def fit(self, X, y=None):
         return self
@@ -114,10 +102,9 @@ class BostonFeaturesTransformer(BaseEstimator, TransformerMixin):
         #  (this class is "Boston-specific"). For example X[:,1] is the second
         #  feature ('ZN').
 
-        X_transformed = None
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        from sklearn.preprocessing import PolynomialFeatures
+        poly = PolynomialFeatures(self.degree)
+        X_transformed = poly.fit_transform(X)
 
         return X_transformed
 
@@ -164,9 +151,8 @@ def mse_score(y: np.ndarray, y_pred: np.ndarray):
     """
 
     # TODO: Implement MSE using numpy.
-    # ====== YOUR CODE: ======
-    raise NotImplementedError()
-    # ========================
+    diff = y - y_pred
+    mse = np.dot(diff, diff) / y.shape[0]
     return mse
 
 
@@ -179,9 +165,12 @@ def r2_score(y: np.ndarray, y_pred: np.ndarray):
     """
 
     # TODO: Implement R^2 using numpy.
-    # ====== YOUR CODE: ======
-    raise NotImplementedError()
-    # ========================
+    y_mean = y.mean()
+    diff = y - y_pred
+    dot_diff = np.dot(diff, diff)
+    y_centered = y - y_mean
+    dot_y_pred = np.dot(y_centered, y_centered)
+    r2 = 1 - (dot_diff / dot_y_pred)
     return r2
 
 
