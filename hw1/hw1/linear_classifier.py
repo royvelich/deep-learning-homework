@@ -165,7 +165,7 @@ def hyperparams():
     #  to pass.
 
     hp['weight_std'] = 1
-    hp['learn_rate'] = 0.1
+    hp['learn_rate'] = 0.2
     hp['weight_decay'] = 0.01
 
     return hp
