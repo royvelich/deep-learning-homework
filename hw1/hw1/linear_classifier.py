@@ -98,6 +98,7 @@ class LinearClassifier(object):
             #  4. Don't forget to add a regularization term to the loss,
             #     using the weight_decay parameter.
 
+            train_batches = 0
             for idx, (images, classes) in enumerate(dl_train):
                 y_pred, class_scores = self.predict(images)
                 current_loss = loss_fn.loss(images, classes, class_scores, y_pred)
@@ -105,21 +106,24 @@ class LinearClassifier(object):
                 total_loss = total_loss + current_loss
                 total_correct = total_correct + current_accuracy
                 self.weights = self.weights - learn_rate*loss_fn.grad() - weight_decay * self.weights
+                train_batches = train_batches + 1
 
             total_correct_valid = 0
             total_loss_valid = 0
+            valid_batches = 0
             for idx, (images_valid, classes_valid) in enumerate(dl_valid):
                 y_pred_valid, class_scores_valid = self.predict(images_valid)
                 current_loss_valid = loss_fn.loss(images_valid, classes_valid, class_scores_valid, y_pred_valid)
                 current_accuracy_valid = self.evaluate_accuracy(classes_valid, y_pred_valid)
                 total_loss_valid = total_loss_valid + current_loss_valid
                 total_correct_valid = total_correct_valid + current_accuracy_valid
+                valid_batches = valid_batches + 1
 
-            valid_res.loss.append(total_loss_valid / len(dl_valid.dataset))
-            valid_res.accuracy.append(total_correct_valid / len(dl_valid.dataset))
+            valid_res.loss.append(total_loss_valid / valid_batches)
+            valid_res.accuracy.append(total_correct_valid / valid_batches)
 
-            train_res.loss.append(total_loss / len(dl_train.dataset))
-            train_res.accuracy.append(total_correct / len(dl_train.dataset))
+            train_res.loss.append(total_loss / train_batches)
+            train_res.accuracy.append(total_correct / train_batches)
 
             print('.', end='')
 
@@ -144,7 +148,10 @@ class LinearClassifier(object):
         rows = self.weights.size()[0]
         cols = self.weights.size()[1]
 
+
         w_images = self.weights[list(range(1, rows))]
+        w_images = w_images.transpose(-1, 0)
+
         w_images = w_images.reshape(cols, img_shape[0], img_shape[1], img_shape[2])
 
         return w_images
@@ -158,7 +165,7 @@ def hyperparams():
     #  to pass.
 
     hp['weight_std'] = 1
-    hp['learn_rate'] = 0.2
+    hp['learn_rate'] = 0.1
     hp['weight_decay'] = 0.01
 
     return hp
