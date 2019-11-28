@@ -59,16 +59,16 @@ class SVMHingeLoss(ClassifierLoss):
         M = x_scores.clone()
         M[rows, columns] = M[rows, columns].clone() - self.delta
         M = torch.sub(M.clone() + self.delta, ground_truth_scores)
+        M[rows, columns] = 0
         M = torch.max(M.clone(), torch.zeros_like(x_scores.clone()))
-
         loss = torch.sum(M) / float(x_scores.size(0))
 
+        # TODO: Save what you need for gradient calculation in self.grad_ctx
         self.grad_ctx['M'] = M
         self.grad_ctx['x'] = x
         self.grad_ctx['y'] = y
         self.grad_ctx['rows'] = rows
         self.grad_ctx['columns'] = columns
-        # TODO: Save what you need for gradient calculation in self.grad_ctx
 
         return loss
 
@@ -88,21 +88,8 @@ class SVMHingeLoss(ClassifierLoss):
         y = self.grad_ctx['y']
         rows = self.grad_ctx['rows']
         columns = self.grad_ctx['columns']
-
-        bias_trick = hw1tf.BiasTrick()
-        x = bias_trick(x)
-
         M2 = (M > 0).to(dtype=torch.float32)
-
-        # print(M2)
-
         k = M2.sum(dim=1)
-        # print(k)
-
-        M2[rows, columns] = M2[rows, columns].clone() * (-k)
-
-        print(y)
-        print(M2)
-
+        M2[rows, columns] = M2[rows, columns].clone() - k
         grad = torch.mm(x.transpose(0,1), M2) / M.size(0)
         return grad
