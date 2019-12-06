@@ -117,9 +117,11 @@ class Linear(Block):
         #   - db, the gradient of the loss with respect to b
         #  You should accumulate gradients in dw and db.
 
+        # ====== YOUR CODE: ======
         self.dw = self.dw + torch.matmul(dout.transpose(1, 0), x)
         self.db = self.db + torch.matmul(dout.transpose(1, 0), torch.ones(x.shape[0]))
         dx = torch.matmul(dout, self.w)
+        # ========================
 
         return dx
 
@@ -189,9 +191,10 @@ class Sigmoid(Block):
         # TODO: Implement the Sigmoid function.
         #  Save whatever you need into
         #  grad_cache.
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+
+        e_minus_x = (-x).exp()
+        out = 1 / (1 + e_minus_x)
+        self.grad_cache['e_minus_x'] = e_minus_x
 
         return out
 
@@ -202,9 +205,8 @@ class Sigmoid(Block):
         """
 
         # TODO: Implement gradient w.r.t. the input x
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        e_minus_x = self.grad_cache['e_minus_x']
+        dx = (e_minus_x / ((1 + e_minus_x) * (1 + e_minus_x))) * dout
 
         return dx
 
@@ -247,7 +249,10 @@ class CrossEntropyLoss(Block):
         #  Tip: to get a different column from each row of a matrix tensor m,
         #  you can index it with m[range(num_rows), list_of_cols].
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        true_label_scores = x[range(N), y]
+        log_sum = x.exp().sum(dim=1).log()
+        loss = (log_sum - true_label_scores).sum(dim=0) / N
+        self.grad_cache['log_sum'] = log_sum
         # ========================
 
         self.grad_cache['x'] = x
@@ -266,7 +271,10 @@ class CrossEntropyLoss(Block):
 
         # TODO: Calculate the gradient w.r.t. the input x
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        sum_expanded = x.exp().sum(dim=1).unsqueeze(1).expand(-1, x.shape[1])
+        result = (x.exp() / sum_expanded)
+        result[range(N), y] = result[range(N), y].clone() - 1
+        dx = (result / N) * dout
         # ========================
 
         return dx
@@ -325,7 +333,9 @@ class Sequential(Block):
         # TODO: Implement the forward pass by passing each block's output
         #  as the input of the next.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        out = x
+        for block in self.blocks:
+            out = block.forward(out, **kw)
         # ========================
 
         return out
@@ -337,7 +347,9 @@ class Sequential(Block):
         #  Each block's input gradient should be the previous block's output
         #  gradient. Behold the backpropagation algorithm in action!
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        din = dout
+        for block in reversed(self.blocks):
+            din = block.backward(din)
         # ========================
 
         return din
@@ -347,7 +359,8 @@ class Sequential(Block):
 
         # TODO: Return the parameter tuples from all blocks.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        for block in self.blocks:
+            params = params + block.params()
         # ========================
 
         return params
@@ -398,7 +411,20 @@ class MLP(Block):
 
         # TODO: Build the MLP architecture as described.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        blocks.append(Linear(in_features, hidden_features[0]))
+        if activation is 'relu':
+            blocks.append(ReLU())
+        else:
+            blocks.append(Sigmoid())
+
+        for i in range(len(hidden_features) - 1):
+            blocks.append(Linear(hidden_features[i], hidden_features[i + 1]))
+            if activation is 'relu':
+                blocks.append(ReLU())
+            else:
+                blocks.append(Sigmoid())
+
+        blocks.append(Linear(hidden_features[-1], num_classes))
         # ========================
 
         self.sequence = Sequential(*blocks)
