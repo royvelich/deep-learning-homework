@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import DataLoader
 from typing import Callable, Any
 from cs236781.train_results import BatchResult, EpochResult, FitResult
-
+import hw2.blocks as blocks
 
 class Trainer(abc.ABC):
     """
@@ -182,6 +182,7 @@ class BlocksTrainer(Trainer):
 
     def train_batch(self, batch) -> BatchResult:
         X, y = batch
+        # print(X.shape)
 
         # TODO: Train the Block model on one batch of data.
         #  - Forward pass
@@ -189,7 +190,19 @@ class BlocksTrainer(Trainer):
         #  - Optimize params
         #  - Calculate number of correct predictions
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        # X = X.reshape(X.shape[0], -1)
+        class_scores = self.model.forward(X)
+        loss = self.loss_fn.forward(class_scores, y=y)
+        dloss = self.loss_fn.backward()
+        self.model.backward(dloss)
+        self.optimizer.step()
+        pred = class_scores.argmax(dim=1)
+        num_correct = (y == pred).sum()
+
+        # print(class_scores)
+        # print(y == pred)
+
+        # print(num_correct)
         # ========================
 
         return BatchResult(loss, num_correct)

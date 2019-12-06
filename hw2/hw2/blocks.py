@@ -118,8 +118,8 @@ class Linear(Block):
         #  You should accumulate gradients in dw and db.
 
         # ====== YOUR CODE: ======
-        self.dw = self.dw + torch.matmul(dout.transpose(1, 0), x)
-        self.db = self.db + torch.matmul(dout.transpose(1, 0), torch.ones(x.shape[0]))
+        self.dw += torch.matmul(dout.transpose(1, 0), x)
+        self.db += torch.matmul(dout.transpose(1, 0), torch.ones(x.shape[0]))
         dx = torch.matmul(dout, self.w)
         # ========================
 
