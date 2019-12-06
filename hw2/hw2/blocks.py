@@ -74,9 +74,9 @@ class Linear(Block):
         self.out_features = out_features
 
         # TODO: Create the weight matrix (w) and bias vector (b).
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+
+        self.w = torch.randn(out_features, in_features) * wstd
+        self.b = torch.randn(out_features)
 
         self.dw = torch.zeros_like(self.w)
         self.db = torch.zeros_like(self.b)
@@ -98,9 +98,8 @@ class Linear(Block):
         x = x.reshape((x.shape[0], -1))
 
         # TODO: Compute the affine transform
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+
+        out = torch.matmul(x, self.w.transpose(1, 0)) + self.b
 
         self.grad_cache['x'] = x
         return out
@@ -117,9 +116,10 @@ class Linear(Block):
         #   - dw, the gradient of the loss with respect to w
         #   - db, the gradient of the loss with respect to b
         #  You should accumulate gradients in dw and db.
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+
+        self.dw = self.dw + torch.matmul(dout.transpose(1, 0), x)
+        self.db = self.db + torch.matmul(dout.transpose(1, 0), torch.ones(x.shape[0]))
+        dx = torch.matmul(dout, self.w)
 
         return dx
 
@@ -144,9 +144,8 @@ class ReLU(Block):
         """
 
         # TODO: Implement the ReLU operation.
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        zero = torch.zeros_like(x)
+        out = x.max(zero)
 
         self.grad_cache['x'] = x
         return out
@@ -159,9 +158,8 @@ class ReLU(Block):
         x = self.grad_cache['x']
 
         # TODO: Implement gradient w.r.t. the input x
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        ones = (x > torch.zeros_like(x)).to(dtype=torch.float32)
+        dx = ones * dout
 
         return dx
 
