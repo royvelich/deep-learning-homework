@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import DataLoader
 from typing import Callable, Any
 from cs236781.train_results import BatchResult, EpochResult, FitResult
-import hw2.blocks as blocks
+
 
 class Trainer(abc.ABC):
     """
@@ -73,7 +73,26 @@ class Trainer(abc.ABC):
             #    save the model to the file specified by the checkpoints
             #    argument.
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            epoch_result_train = self.train_epoch(dl_train)
+            train_loss.append(sum(epoch_result_train.losses) / len(epoch_result_train.losses))
+            train_acc.append(epoch_result_train.accuracy)
+
+            epoch_result_test = self.test_epoch(dl_test)
+            test_loss.append(sum(epoch_result_test.losses) / len(epoch_result_test.losses))
+            test_acc.append(epoch_result_test.accuracy)
+
+            if len(test_loss) > 1:
+                current_test_loss = test_loss[-1]
+                last_test_loss = test_loss[-2]
+                if last_test_loss < current_test_loss:
+                    epochs_without_improvement += 1
+                else:
+                    epochs_without_improvement = 0
+
+            actual_num_epochs += 1
+
+            if epochs_without_improvement == early_stopping:
+                break
             # ========================
 
         return FitResult(actual_num_epochs,
@@ -182,7 +201,6 @@ class BlocksTrainer(Trainer):
 
     def train_batch(self, batch) -> BatchResult:
         X, y = batch
-        # print(X.shape)
 
         # TODO: Train the Block model on one batch of data.
         #  - Forward pass
@@ -190,7 +208,7 @@ class BlocksTrainer(Trainer):
         #  - Optimize params
         #  - Calculate number of correct predictions
         # ====== YOUR CODE: ======
-        # X = X.reshape(X.shape[0], -1)
+        self.optimizer.zero_grad()
         class_scores = self.model.forward(X)
         loss = self.loss_fn.forward(class_scores, y=y)
         dloss = self.loss_fn.backward()
@@ -198,23 +216,21 @@ class BlocksTrainer(Trainer):
         self.optimizer.step()
         pred = class_scores.argmax(dim=1)
         num_correct = (y == pred).sum()
-
-        # print(class_scores)
-        # print(y == pred)
-
-        # print(num_correct)
         # ========================
 
         return BatchResult(loss, num_correct)
 
     def test_batch(self, batch) -> BatchResult:
         X, y = batch
-
         # TODO: Evaluate the Block model on one batch of data.
         #  - Forward pass
         #  - Calculate number of correct predictions
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        self.optimizer.zero_grad()
+        class_scores = self.model.forward(X)
+        loss = self.loss_fn.forward(class_scores, y=y)
+        pred = class_scores.argmax(dim=1)
+        num_correct = (y == pred).sum()
         # ========================
 
         return BatchResult(loss, num_correct)
