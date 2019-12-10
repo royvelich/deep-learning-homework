@@ -305,7 +305,7 @@ class Dropout(Block):
             out = x * mask
             self.grad_cache['mask'] = mask
         else:
-            out = x
+            out = x * (1 - self.p)
         # ========================
 
         return out
@@ -317,7 +317,7 @@ class Dropout(Block):
             mask = self.grad_cache['mask']
             dx = dout * mask
         else:
-            dx = dout
+            dx = dout * (1 - self.p)
         # ========================
 
         return dx

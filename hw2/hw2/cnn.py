@@ -1,7 +1,7 @@
 import torch
 import itertools as it
 import torch.nn as nn
-
+import math
 
 class ConvClassifier(nn.Module):
     """
@@ -31,6 +31,12 @@ class ConvClassifier(nn.Module):
         self.pool_every = pool_every
         self.hidden_dims = hidden_dims
 
+        self.P = self.pool_every
+        self.N = len(self.channels)
+        self.M = len(self.hidden_dims)
+        self.quotient = int(self.N / self.P)
+        self.reminder = int(math.remainder(self.N, self.P))
+
         self.feature_extractor = self._make_feature_extractor()
         self.classifier = self._make_classifier()
 
@@ -45,8 +51,16 @@ class ConvClassifier(nn.Module):
         #  Note: If N is not divisible by P, then N mod P additional
         #  CONV->ReLUs should exist at the end, without a MaxPool after them.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        k = 0
+        for i in range(self.quotient):
+            for j in range(self.P):
+                layers.append(nn.Conv2d(in_channels=in_channels if k == 0 else self.channels[k - 1], out_channels=self.channels[k], kernel_size=(3, 3), padding=1))
+                layers.append(nn.ReLU())
+                k += 1
+            layers.append(torch.nn.MaxPool2d(2))
 
+        for i in range(self.reminder):
+            layers.append(nn.Conv2d(in_channels=self.channels[k - 1], out_channels=self.channels[k], kernel_size=(3, 3), padding=1))
         # ========================
         seq = nn.Sequential(*layers)
         return seq
@@ -61,7 +75,12 @@ class ConvClassifier(nn.Module):
         #  the first linear layer.
         #  The last Linear layer should have an output dim of out_classes.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        self.flatten_features_size = int(in_w / math.pow(2, self.quotient)) * int(in_h / math.pow(2, self.quotient)) * self.channels[(self.P * self.quotient + self.reminder) - 1]
+        for i in range(self.M):
+            layers.append(nn.Linear(self.flatten_features_size if i == 0 else self.hidden_dims[i - 1], self.hidden_dims[i]))
+            layers.append(nn.ReLU())
+
+        layers.append(nn.Linear(self.hidden_dims[self.M - 1], self.out_classes))
         # ========================
         seq = nn.Sequential(*layers)
         return seq
@@ -71,7 +90,10 @@ class ConvClassifier(nn.Module):
         #  Extract features from the input, run the classifier on them and
         #  return class scores.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        features = self.feature_extractor.forward(x)
+        print(features.shape)
+        features = features.reshape(-1, self.flatten_features_size)
+        out = self.classifier.forward(features)
         # ========================
         return out
 
@@ -156,5 +178,5 @@ class YourCodeNet(ConvClassifier):
     #  For example, add batchnorm, dropout, skip connections, change conv
     #  filter sizes etc.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+
     # ========================
