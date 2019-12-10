@@ -1,7 +1,13 @@
 import torch
 
-x = torch.rand(3).expand(2,-1)
-print(x)
+x = [1,2,3,4,5,6,7]
+
+y = x[0:2]
+
+print(y)
+
+# x = torch.rand(3).expand(2,-1)
+# print(x)
 
 # mylist = [(1,2), (3,4), (5,6)]
 #

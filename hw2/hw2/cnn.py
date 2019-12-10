@@ -35,7 +35,7 @@ class ConvClassifier(nn.Module):
         self.N = len(self.channels)
         self.M = len(self.hidden_dims)
         self.quotient = int(self.N / self.P)
-        self.reminder = int(math.remainder(self.N, self.P))
+        self.reminder = int(math.fabs(math.remainder(self.N, self.P)))
 
         self.feature_extractor = self._make_feature_extractor()
         self.classifier = self._make_classifier()
@@ -91,11 +91,18 @@ class ConvClassifier(nn.Module):
         #  return class scores.
         # ====== YOUR CODE: ======
         features = self.feature_extractor.forward(x)
-        print(features.shape)
         features = features.reshape(-1, self.flatten_features_size)
         out = self.classifier.forward(features)
         # ========================
         return out
+
+
+class Identity(nn.Module):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
+    def forward(self, x):
+        return x
 
 
 class ResidualBlock(nn.Module):
@@ -132,7 +139,22 @@ class ResidualBlock(nn.Module):
         #  Use convolutions which preserve the spatial extent of the input.
         #  For simplicity of implementation, we'll assume kernel sizes are odd.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        main_layers = []
+        for i in range(len(channels)):
+            main_layers.append(torch.nn.Conv2d(in_channels=in_channels if i == 0 else channels[i - 1], out_channels=channels[i], kernel_size=kernel_sizes[i], padding=int((kernel_sizes[i] - 1) / 2)))
+            if batchnorm is True:
+                main_layers.append(torch.nn.BatchNorm2d(num_features=channels[i]))
+            if dropout > 0:
+                main_layers.append(torch.nn.Dropout(dropout))
+            main_layers.append(torch.nn.ReLU())
+        self.main_path = nn.Sequential(*main_layers)
+
+        shortcut_layers = [Identity()]
+        output_channels = channels[len(channels) - 1]
+        if in_channels != output_channels:
+            shortcut_layers.append(torch.nn.Conv2d(in_channels=in_channels, out_channels=output_channels, kernel_size=1))
+
+        self.shortcut_path = nn.Sequential(*shortcut_layers)
         # ========================
 
     def forward(self, x):
@@ -161,7 +183,13 @@ class ResNetClassifier(ConvClassifier):
         #  CONV->ReLUs (with a skip over them) should exist at the end,
         #  without a MaxPool after them.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        k = 0
+        for i in range(self.quotient):
+            layers.append(ResidualBlock(in_channels=in_channels if k == 0 else self.channels[k - 1], channels=self.channels[k:k+self.P], kernel_sizes=[1]*self.P))
+            layers.append(torch.nn.MaxPool2d(2))
+            k += self.P
+
+        layers.append(ResidualBlock(in_channels=self.channels[k - 1], channels=self.channels[k:k + self.reminder], kernel_sizes=[1] * self.reminder))
         # ========================
         seq = nn.Sequential(*layers)
         return seq
