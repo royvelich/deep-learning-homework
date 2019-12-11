@@ -142,17 +142,18 @@ class ResidualBlock(nn.Module):
         main_layers = []
         for i in range(len(channels)):
             main_layers.append(torch.nn.Conv2d(in_channels=in_channels if i == 0 else channels[i - 1], out_channels=channels[i], kernel_size=kernel_sizes[i], padding=int((kernel_sizes[i] - 1) / 2)))
-            if batchnorm is True:
-                main_layers.append(torch.nn.BatchNorm2d(num_features=channels[i]))
-            if dropout > 0:
-                main_layers.append(torch.nn.Dropout(dropout))
-            main_layers.append(torch.nn.ReLU())
+            if i != (len(channels) - 1):
+                if batchnorm is True:
+                    main_layers.append(torch.nn.BatchNorm2d(num_features=channels[i]))
+                if dropout > 0:
+                    main_layers.append(torch.nn.Dropout2d(dropout))
+                main_layers.append(torch.nn.ReLU())
         self.main_path = nn.Sequential(*main_layers)
 
-        shortcut_layers = [Identity()]
+        shortcut_layers = []
         output_channels = channels[len(channels) - 1]
         if in_channels != output_channels:
-            shortcut_layers.append(torch.nn.Conv2d(in_channels=in_channels, out_channels=output_channels, kernel_size=1))
+            shortcut_layers.append(torch.nn.Conv2d(in_channels=in_channels, out_channels=output_channels, kernel_size=1, bias=False))
 
         self.shortcut_path = nn.Sequential(*shortcut_layers)
         # ========================
@@ -185,12 +186,12 @@ class ResNetClassifier(ConvClassifier):
         # ====== YOUR CODE: ======
         k = 0
         for i in range(self.quotient):
-            layers.append(ResidualBlock(in_channels=in_channels if k == 0 else self.channels[k - 1], channels=self.channels[k:k+self.P], kernel_sizes=[1]*self.P))
+            layers.append(ResidualBlock(in_channels=in_channels if k == 0 else self.channels[k - 1], channels=self.channels[k:k+self.P], kernel_sizes=[3]*self.P))
             layers.append(torch.nn.MaxPool2d(2))
             k += self.P
 
         if self.reminder > 0:
-            layers.append(ResidualBlock(in_channels=self.channels[k - 1], channels=self.channels[k:k + self.reminder], kernel_sizes=[1] * self.reminder))
+            layers.append(ResidualBlock(in_channels=self.channels[k - 1], channels=self.channels[k:k + self.reminder], kernel_sizes=[3] * self.reminder))
         # ========================
         seq = nn.Sequential(*layers)
         return seq
