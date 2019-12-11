@@ -64,7 +64,18 @@ def run_experiment(run_name, out_dir='./results', seed=None, device=None,
     #   for you automatically.
     fit_res = None
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    channels = []
+    for i in range(len(filters_per_layer)):
+        for j in range(layers_per_block):
+            channels.append(filters_per_layer[i])
+
+    model = model_cls((3,32,32), 10, channels=channels, pool_every=layers_per_block, hidden_dims=hidden_dims)
+    loss_fn = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    trainer = training.TorchTrainer(model, loss_fn, optimizer, device)
+    dl_train = torch.utils.data.DataLoader(ds_train, bs_train, shuffle=False)
+    dl_test = torch.utils.data.DataLoader(ds_test, bs_test, shuffle=False)
+    fit_res = trainer.fit(dl_train, dl_test, epochs, max_batches=batches)
     # ========================
 
     save_experiment(run_name, out_dir, cfg, fit_res)

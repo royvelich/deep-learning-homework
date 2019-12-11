@@ -74,12 +74,12 @@ class Trainer(abc.ABC):
             #    argument.
             # ====== YOUR CODE: ======
             epoch_result_train = self.train_epoch(dl_train)
-            train_loss.append(sum(epoch_result_train.losses) / len(epoch_result_train.losses))
-            train_acc.append(epoch_result_train.accuracy)
+            train_loss.append(float(sum(epoch_result_train.losses) / len(epoch_result_train.losses)))
+            train_acc.append(float(epoch_result_train.accuracy))
 
             epoch_result_test = self.test_epoch(dl_test)
-            test_loss.append(sum(epoch_result_test.losses) / len(epoch_result_test.losses))
-            test_acc.append(epoch_result_test.accuracy)
+            test_loss.append(float(sum(epoch_result_test.losses) / len(epoch_result_test.losses)))
+            test_acc.append(float(epoch_result_test.accuracy))
 
             if len(test_loss) > 1:
                 current_test_loss = test_loss[-1]
@@ -95,7 +95,9 @@ class Trainer(abc.ABC):
                 break
             # ========================
 
-        return FitResult(actual_num_epochs,
+        print(train_loss)
+
+        return FitResult(int(actual_num_epochs),
                          train_loss, train_acc, test_loss, test_acc)
 
     def train_epoch(self, dl_train: DataLoader, **kw) -> EpochResult:

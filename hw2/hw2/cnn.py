@@ -189,7 +189,8 @@ class ResNetClassifier(ConvClassifier):
             layers.append(torch.nn.MaxPool2d(2))
             k += self.P
 
-        layers.append(ResidualBlock(in_channels=self.channels[k - 1], channels=self.channels[k:k + self.reminder], kernel_sizes=[1] * self.reminder))
+        if self.reminder > 0:
+            layers.append(ResidualBlock(in_channels=self.channels[k - 1], channels=self.channels[k:k + self.reminder], kernel_sizes=[1] * self.reminder))
         # ========================
         seq = nn.Sequential(*layers)
         return seq
