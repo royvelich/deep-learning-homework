@@ -1,5 +1,9 @@
 import torch
 
+da = [1,2,3,4,5]
+print(da[-1])
+print(da[-2])
+
 x = torch.Tensor([1])
 
 print(float(x))

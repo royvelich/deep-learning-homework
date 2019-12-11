@@ -58,6 +58,8 @@ class Trainer(abc.ABC):
         best_acc = None
         epochs_without_improvement = 0
 
+        best_test_loss = None
+
         for epoch in range(num_epochs):
             verbose = False  # pass this to train/test_epoch.
             if epoch % print_every == 0 or epoch == num_epochs-1:
@@ -81,21 +83,21 @@ class Trainer(abc.ABC):
             test_loss.append(float(sum(epoch_result_test.losses) / len(epoch_result_test.losses)))
             test_acc.append(float(epoch_result_test.accuracy))
 
-            if len(test_loss) > 1:
+            if len(test_loss) == 1:
+                best_test_loss = test_loss[0]
+            else:
                 current_test_loss = test_loss[-1]
-                last_test_loss = test_loss[-2]
-                if last_test_loss < current_test_loss:
+                if current_test_loss >= best_test_loss:
                     epochs_without_improvement += 1
                 else:
                     epochs_without_improvement = 0
+                    best_test_loss = current_test_loss
 
             actual_num_epochs += 1
 
             if epochs_without_improvement == early_stopping:
                 break
             # ========================
-
-        print(train_loss)
 
         return FitResult(int(actual_num_epochs),
                          train_loss, train_acc, test_loss, test_acc)
