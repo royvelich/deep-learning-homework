@@ -208,5 +208,19 @@ class YourCodeNet(ConvClassifier):
     #  For example, add batchnorm, dropout, skip connections, change conv
     #  filter sizes etc.
     # ====== YOUR CODE: ======
+    def _make_feature_extractor(self):
+        in_channels, in_h, in_w, = tuple(self.in_size)
 
+        layers = []
+        k = 0
+        for i in range(self.quotient):
+            layers.append(ResidualBlock(in_channels=in_channels if k == 0 else self.channels[k - 1], channels=self.channels[k:k+self.P], kernel_sizes=[5]*self.P, dropout=0.3, batchnorm=True))
+            layers.append(torch.nn.MaxPool2d(2))
+            k += self.P
+
+        if self.reminder > 0:
+            layers.append(ResidualBlock(in_channels=self.channels[k - 1], channels=self.channels[k:k + self.reminder], kernel_sizes=[5] * self.reminder))
+        seq = nn.Sequential(*layers)
+        return seq
     # ========================
+
