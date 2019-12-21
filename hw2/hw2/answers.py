@@ -49,28 +49,29 @@ def part2_dropout_hp():
 
 part2_q1 = r"""
 **Your answer:**
-
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
-
+  1. We can clearly see that the graphs of no-dropout (dropout = 0) vs dropout=0.4 visualize the typical characteristics of 
+  a network that overfits the training set versus a network that generalizes well for unseen samples.
+  For example:
+    1. We can see that the test accuracy of dropout=0.4 is higher than the test accuracy of dropout=0.
+    2. We can see that the test loss of dropout=0 starts to rise again at epoch=15 while the test loss of dropout=0.4 
+    keeps decreasing slowly towards convergence (similar to dropout=0.8).
+    3. We can see that at dropout=0 the train loss at the final epoch is almost 0, which means severe overfitting.
+  2. We can clearly see that the test accuracy of dropout=0.4 is much higher than the test accuracy of
+  dropout=0.8 (which is even lower than dropout=0), and this is because when we use very high dropout, which is
+  equivalent to high regularization measure, the network is prevented from getting exposed to the real training data,
+  and thus fails to learn effectively.
 """
 
 part2_q2 = r"""
 **Your answer:**
-
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
-
+Yes, it is possible.
+The accuracy of a dataset is evaluated by the maximal value of the softmax layer. It is not dependent on how high the
+softmax output is in absolute terms, only relative terms. For example, we can have a classifier with 3 different
+classes - A, B and C. We can have two given samples which will be classified the same but with different losses. 
+For example, SAMPLE1 = [A=0.9, B=0.1, C=0] and SAMPLE2 = [A=0.4,B=0.3,C=0.3]. In both cases we will get the same
+classification, however, we get that loss(SAMPLE1) = 0.04 and loss(SAMPLE2) = 0.39. That is, we see that the accuracy
+can be sustained or even increase as the probabilities of the different classes are shifted towards each other as the
+epochs progress.
 """
 # ==============
 
