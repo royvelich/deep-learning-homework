@@ -220,7 +220,11 @@ class SequenceBatchSampler(torch.utils.data.Sampler):
         #  you can drop it.
         idx = None  # idx should be a 1-d list of indices.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        idx = []
+        num_of_batches = len(self.dataset) // self.batch_size
+        for i in range(num_of_batches):
+            for j in range(self.batch_size):
+                idx.append(j * self.batch_size + i)
         # ========================
         return iter(idx)
 
@@ -266,7 +270,40 @@ class MultilayerGRU(nn.Module):
         #      then call self.register_parameter() on them. Also make
         #      sure to initialize them. See functions in torch.nn.init.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        for i in range(n_layers):
+            current_in_dim = h_dim
+            if i == 0:
+                current_in_dim = in_dim
+
+            z_lin = torch.nn.Linear(current_in_dim + h_dim, h_dim)
+            r_lin = torch.nn.Linear(current_in_dim + h_dim, h_dim)
+            g_lin = torch.nn.Linear(current_in_dim + h_dim, h_dim)
+            Y_lin = torch.nn.Linear(h_dim, out_dim)
+
+            self.add_module('z_lin', z_lin)
+            self.add_module('r_lin', r_lin)
+            self.add_module('g_lin', g_lin)
+            self.add_module('Y_lin', Y_lin)
+
+            z_sig = torch.nn.Sigmoid()
+            r_sig = torch.nn.Sigmoid()
+            g_tanh = torch.nn.Tanh()
+
+            self.add_module('z_sig', z_sig)
+            self.add_module('r_sig', r_sig)
+            self.add_module('g_tanh', g_tanh)
+
+            params = {
+                'z_lin': z_lin,
+                'r_lin': r_lin,
+                'g_lin': g_lin,
+                'Y_lin': Y_lin,
+                'z_sig': z_sig,
+                'r_sig': r_sig,
+                'g_tanh': g_tanh
+            }
+
+            self.layer_params.append(params)
         # ========================
 
     def forward(self, input: Tensor, hidden_state: Tensor = None):
@@ -303,6 +340,60 @@ class MultilayerGRU(nn.Module):
         #  Tip: You can use torch.stack() to combine multiple tensors into a
         #  single tensor in a differentiable manner.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        # print(input.device)
+        # print(self.in_dim)
+        # print(self.out_dim)
+        # print(self.h_dim)
+
+
+        sequence_length = input.shape[1]
+
+        input_per_t = []
+        for i in range(self.n_layers):
+            input_per_t.append([])
+
+        for i in range(sequence_length):
+            input_per_t[0].append(layer_input[:, i, :])
+
+        hidden_per_t = []
+        for i in range(self.n_layers):
+            hidden_per_t.append([])
+            hidden_per_t[i].append(layer_states[i])
+
+        for i in range(self.n_layers):
+            print(i)
+            params = self.layer_params[i]
+            z_lin = params['z_lin']
+            r_lin = params['r_lin']
+            g_lin = params['g_lin']
+
+            z_sig = params['z_sig']
+            r_sig = params['r_sig']
+            g_tanh = params['g_tanh']
+            for j in range(sequence_length):
+                print(j)
+
+                current_hidden = hidden_per_t[i][j]
+                current_input = input_per_t[i][j]
+
+                # print('input size: ' + str(current_input.size()))
+                # print('hidden size: ' + str(current_hidden.size()))
+
+
+                stacked_input = torch.cat([current_input, current_hidden], dim=1)
+
+                # print(stacked_input.shape)
+
+
+                z = z_sig(z_lin(stacked_input))
+                r = r_sig(r_lin(stacked_input))
+
+                stacked_masked_input = torch.cat([current_input, r * current_hidden], dim=1)
+
+                g = g_tanh(g_lin(stacked_masked_input))
+
+                h = z * current_hidden + (1 - z) * g
+                hidden_per_t[i].append(h)
+                input_per_t[i+1].append(h)
         # ========================
         return layer_output, hidden_state
