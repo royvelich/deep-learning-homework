@@ -124,7 +124,6 @@ def chars_to_labelled_samples(text: str, char_to_idx: dict, seq_len: int,
     #  3. Create the labels tensor in a similar way and convert to indices.
     #  Note that no explicit loops are required to implement this function.
     # ====== YOUR CODE: ======
-
     S = seq_len
     N = (len(text) - 1) // seq_len
     text_length = N * seq_len
@@ -153,8 +152,8 @@ def hot_softmax(y, dim=0, temperature=1.0):
     # TODO: Implement based on the above.
     # ====== YOUR CODE: ======
     scaled_y = y / temperature
-    exp_scaled_y = torch.exp(scaled_y)
-    result = exp_scaled_y[dim] / exp_scaled_y.sum()
+    m = torch.nn.Softmax(dim=dim)
+    result = m(scaled_y)
     # ========================
     return result
 
@@ -190,9 +189,16 @@ def generate_from_model(model, start_sequence, n_chars, char_maps, T):
     #  necessary for this. Best to disable tracking for speed.
     #  See torch.no_grad().
     # ====== YOUR CODE: ======
-
+    with torch.no_grad():
+        for i in range(n_chars - len(start_sequence)):
+            onehot_tensor = chars_to_onehot(out_text, char_to_idx).unsqueeze(0)
+            output, hidden = model.forward(onehot_tensor.to(dtype=torch.float))
+            next_char_scores = output[0, len(start_sequence) + i - 1, :]
+            next_char_prob = hot_softmax(next_char_scores)
+            idx = int(torch.multinomial(next_char_prob, 1))
+            next_char = idx_to_char[idx]
+            out_text = out_text + next_char
     # ========================
-
     return out_text
 
 
