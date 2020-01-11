@@ -152,7 +152,9 @@ def hot_softmax(y, dim=0, temperature=1.0):
     """
     # TODO: Implement based on the above.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    scaled_y = y / temperature
+    exp_scaled_y = torch.exp(scaled_y)
+    result = exp_scaled_y[dim] / exp_scaled_y.sum()
     # ========================
     return result
 
@@ -188,7 +190,7 @@ def generate_from_model(model, start_sequence, n_chars, char_maps, T):
     #  necessary for this. Best to disable tracking for speed.
     #  See torch.no_grad().
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+
     # ========================
 
     return out_text
@@ -275,35 +277,51 @@ class MultilayerGRU(nn.Module):
             if i == 0:
                 current_in_dim = in_dim
 
-            z_lin = torch.nn.Linear(current_in_dim + h_dim, h_dim)
-            r_lin = torch.nn.Linear(current_in_dim + h_dim, h_dim)
-            g_lin = torch.nn.Linear(current_in_dim + h_dim, h_dim)
-            Y_lin = torch.nn.Linear(h_dim, out_dim)
-
-            self.add_module('z_lin', z_lin)
-            self.add_module('r_lin', r_lin)
-            self.add_module('g_lin', g_lin)
-            self.add_module('Y_lin', Y_lin)
-
+            z1 = torch.nn.Linear(current_in_dim, h_dim, bias=False)
+            z2 = torch.nn.Linear(h_dim, h_dim)
             z_sig = torch.nn.Sigmoid()
+
+            r1 = torch.nn.Linear(current_in_dim, h_dim, bias=False)
+            r2 = torch.nn.Linear(h_dim, h_dim)
             r_sig = torch.nn.Sigmoid()
+
+            g1 = torch.nn.Linear(current_in_dim, h_dim, bias=False)
+            g2 = torch.nn.Linear(h_dim, h_dim)
             g_tanh = torch.nn.Tanh()
 
-            self.add_module('z_sig', z_sig)
-            self.add_module('r_sig', r_sig)
-            self.add_module('g_tanh', g_tanh)
+            d = torch.nn.Dropout2d(dropout)
+
+            self.add_module('z1' + str(i), z1)
+            self.add_module('z2' + str(i), z2)
+            self.add_module('z_sig' + str(i), z_sig)
+
+            self.add_module('r1' + str(i), r1)
+            self.add_module('r2' + str(i), r2)
+            self.add_module('r_sig' + str(i), r_sig)
+
+            self.add_module('g1' + str(i), g1)
+            self.add_module('g2' + str(i), g2)
+            self.add_module('g_tanh' + str(i), g_tanh)
+
+            self.add_module('d' + str(i), d)
 
             params = {
-                'z_lin': z_lin,
-                'r_lin': r_lin,
-                'g_lin': g_lin,
-                'Y_lin': Y_lin,
+                'z1': z1,
+                'z2': z2,
                 'z_sig': z_sig,
+                'r1': r1,
+                'r2': r2,
                 'r_sig': r_sig,
-                'g_tanh': g_tanh
+                'g1': g1,
+                'g2': g2,
+                'g_tanh': g_tanh,
+                'd': d
             }
 
             self.layer_params.append(params)
+
+        self.Y = torch.nn.Linear(h_dim, out_dim)
+        self.add_module('Y', self.Y)
         # ========================
 
     def forward(self, input: Tensor, hidden_state: Tensor = None):
@@ -340,19 +358,16 @@ class MultilayerGRU(nn.Module):
         #  Tip: You can use torch.stack() to combine multiple tensors into a
         #  single tensor in a differentiable manner.
         # ====== YOUR CODE: ======
-        # print(input.device)
-        # print(self.in_dim)
-        # print(self.out_dim)
-        # print(self.h_dim)
-
-
-        sequence_length = input.shape[1]
+        if next(self.parameters()).is_cuda:
+            device = 'cuda'
+        else:
+            device = 'cpu'
 
         input_per_t = []
-        for i in range(self.n_layers):
+        for i in range(self.n_layers+1):
             input_per_t.append([])
 
-        for i in range(sequence_length):
+        for i in range(seq_len):
             input_per_t[0].append(layer_input[:, i, :])
 
         hidden_per_t = []
@@ -361,39 +376,54 @@ class MultilayerGRU(nn.Module):
             hidden_per_t[i].append(layer_states[i])
 
         for i in range(self.n_layers):
-            print(i)
             params = self.layer_params[i]
-            z_lin = params['z_lin']
-            r_lin = params['r_lin']
-            g_lin = params['g_lin']
-
+            z1 = params['z1']
+            z2 = params['z2']
             z_sig = params['z_sig']
+
+            r1 = params['r1']
+            r2 = params['r2']
             r_sig = params['r_sig']
+
+            g1 = params['g1']
+            g2 = params['g2']
             g_tanh = params['g_tanh']
-            for j in range(sequence_length):
-                print(j)
 
-                current_hidden = hidden_per_t[i][j]
-                current_input = input_per_t[i][j]
+            d = params['d']
+            for j in range(seq_len):
+                current_hidden = hidden_per_t[i][j].to(device)
+                current_input = input_per_t[i][j].to(device)
+                # stacked_input = torch.cat([current_input, current_hidden], dim=1)
+                z_act = z_sig(z1(current_input) + z2(current_hidden))
+                r_act = r_sig(r1(current_input) + r2(current_hidden))
+                stacked_masked_input = torch.cat([current_input, r_act * current_hidden], dim=1)
+                g_act = g_tanh(g1(current_input) + g2(current_hidden))
+                h = (z_act * current_hidden + (1 - z_act) * g_act).to(device)
+                hidden_per_t[i].append(h.to(device))
+                input_per_t[i+1].append(d(h.to(device)))
 
-                # print('input size: ' + str(current_input.size()))
-                # print('hidden size: ' + str(current_hidden.size()))
+        last_output_layer = input_per_t[self.n_layers]
+        output_sequence = []
+        for i in range(seq_len):
+            output_sequence.append(self.Y(last_output_layer[i].to(device)))
 
+        hidden_sequence = []
+        for i in range(self.n_layers):
+            hidden_sequence.append(hidden_per_t[i][seq_len-1].to(device))
 
-                stacked_input = torch.cat([current_input, current_hidden], dim=1)
+        for i in range(seq_len):
+            if i == 0:
+                layer_output = output_sequence[0].to(device)
+            else:
+                layer_output = torch.cat([layer_output.to(device), output_sequence[i].to(device)], dim=1)
 
-                # print(stacked_input.shape)
+        for i in range(self.n_layers):
+            if i == 0:
+                hidden_state = hidden_sequence[0].to(device)
+            else:
+                hidden_state = torch.cat([hidden_state.to(device), hidden_sequence[i].to(device)], dim=1)
 
-
-                z = z_sig(z_lin(stacked_input))
-                r = r_sig(r_lin(stacked_input))
-
-                stacked_masked_input = torch.cat([current_input, r * current_hidden], dim=1)
-
-                g = g_tanh(g_lin(stacked_masked_input))
-
-                h = z * current_hidden + (1 - z) * g
-                hidden_per_t[i].append(h)
-                input_per_t[i+1].append(h)
+        layer_output = layer_output.reshape(batch_size, seq_len, self.out_dim)
+        hidden_state = hidden_state.reshape(batch_size, self.n_layers, self.h_dim)
         # ========================
         return layer_output, hidden_state
