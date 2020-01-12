@@ -19,14 +19,13 @@ class EncoderCNN(nn.Module):
         #  use pooling or only strides, use any activation functions,
         #  use BN or Dropout, etc.
         # ====== YOUR CODE: ======
-        modules.append(torch.nn.Conv2d(in_channels=in_channels, out_channels=8, kernel_size=(3, 3), padding=1))
+        modules.append(torch.nn.Conv2d(in_channels=in_channels, out_channels=8, kernel_size=(16, 16)))
         modules.append(nn.ReLU())
-        modules.append(torch.nn.MaxPool2d(2))
-        modules.append(torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=(3, 3), padding=1))
+        modules.append(torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=(16, 16)))
         modules.append(nn.ReLU())
-        modules.append(torch.nn.MaxPool2d(2))
-        modules.append(torch.nn.Conv2d(in_channels=16, out_channels=out_channels, kernel_size=(3, 3), padding=1))
+        modules.append(torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=(16, 16)))
         modules.append(nn.ReLU())
+        modules.append(torch.nn.Conv2d(in_channels=32, out_channels=out_channels, kernel_size=(16, 16)))
         # ========================
 
         self.cnn = nn.Sequential(*modules)
@@ -50,7 +49,13 @@ class DecoderCNN(nn.Module):
         #  output should be a batch of images, with same dimensions as the
         #  inputs to the Encoder were.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        modules.append(torch.nn.ConvTranspose2d(in_channels=in_channels, out_channels=32, kernel_size=(16, 16)))
+        modules.append(nn.ReLU())
+        modules.append(torch.nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=(16, 16)))
+        modules.append(nn.ReLU())
+        modules.append(torch.nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=(16, 16)))
+        modules.append(nn.ReLU())
+        modules.append(torch.nn.ConvTranspose2d(in_channels=8, out_channels=out_channels, kernel_size=(16, 16)))
         # ========================
         self.cnn = nn.Sequential(*modules)
 
