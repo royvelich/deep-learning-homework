@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from typing import Callable, Any
 from pathlib import Path
 from cs236781.train_results import BatchResult, EpochResult, FitResult
-
+from . import charnn
 
 class Trainer(abc.ABC):
     """
@@ -208,7 +208,7 @@ class RNNTrainer(Trainer):
     def train_epoch(self, dl_train: DataLoader, **kw):
         # TODO: Implement modifications to the base method, if needed.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        self.hidden = None
         # ========================
         return super().train_epoch(dl_train, **kw)
 
@@ -233,7 +233,24 @@ class RNNTrainer(Trainer):
         #  - Update params
         #  - Calculate number of correct char predictions
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        B, S, V = x.shape
+        self.optimizer.zero_grad()
+        output, hidden = self.model.forward(x, self.hidden)
+        self.hidden = hidden
+        num_correct = 0
+        for i in range(seq_len):
+            y_sequence = y[:, i]
+            scores_sequence = output[:, i, :].to(self.device, dtype=torch.float)
+            if i == 0:
+                loss = self.loss_fn(scores_sequence, y_sequence)
+            else:
+                loss += self.loss_fn(scores_sequence, y_sequence)
+
+            pred = scores_sequence.argmax(dim=1)
+            num_correct += (y_sequence == pred).sum()
+
+        loss.backward(retain_graph=True)
+        self.optimizer.step()
         # ========================
 
         # Note: scaling num_correct by seq_len because each sample has seq_len
