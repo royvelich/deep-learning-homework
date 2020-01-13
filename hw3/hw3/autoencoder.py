@@ -85,6 +85,7 @@ class VAE(nn.Module):
         # ====== YOUR CODE: ======
         self.mean_affine = torch.nn.Linear(in_features=n_features, out_features=z_dim)
         self.sigma_affine = torch.nn.Linear(in_features=n_features, out_features=z_dim)
+        self.latent_affine = torch.nn.Linear(in_features=z_dim, out_features=n_features)
         # ========================
 
     def _check_features(self, in_size):
@@ -121,7 +122,9 @@ class VAE(nn.Module):
         #  1. Convert latent z to features h with a linear layer.
         #  2. Apply features decoder.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        h = self.latent_affine(z)
+        h_reshaped = h.reshape(*self.features_shape).unsqueeze(0)
+        x_rec = self.features_decoder(h_reshaped)
         # ========================
 
         # Scale to [-1, 1] (same dynamic range as original images).
