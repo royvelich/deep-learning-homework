@@ -86,7 +86,28 @@ class Trainer(abc.ABC):
             #  - Implement early stopping. This is a very useful and
             #    simple regularization technique that is highly recommended.
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            train_result = self.train_epoch(dl_train)
+            train_loss.append(float(sum(train_result.losses) / len(train_result.losses)))
+            train_acc.append(float(train_result.accuracy))
+
+            test_result = self.test_epoch(dl_test)
+            test_loss.append(float(sum(test_result.losses) / len(test_result.losses)))
+            test_acc.append(float(test_result.accuracy))
+
+            if len(test_loss) == 1:
+                best_test_loss = test_loss[0]
+            else:
+                current_test_loss = test_loss[-1]
+                if current_test_loss >= best_test_loss:
+                    epochs_without_improvement += 1
+                else:
+                    epochs_without_improvement = 0
+                    best_test_loss = current_test_loss
+
+            actual_num_epochs += 1
+
+            if epochs_without_improvement == early_stopping:
+                break
             # ========================
 
             # Save model checkpoint if requested
@@ -215,7 +236,7 @@ class RNNTrainer(Trainer):
     def test_epoch(self, dl_test: DataLoader, **kw):
         # TODO: Implement modifications to the base method, if needed.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        self.hidden = None
         # ========================
         return super().test_epoch(dl_test, **kw)
 
@@ -270,7 +291,19 @@ class RNNTrainer(Trainer):
             #  - Loss calculation
             #  - Calculate number of correct predictions
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            output, hidden = self.model.forward(x, self.hidden)
+            self.hidden = hidden
+            num_correct = 0
+            for i in range(seq_len):
+                y_sequence = y[:, i]
+                scores_sequence = output[:, i, :].to(self.device, dtype=torch.float)
+                if i == 0:
+                    loss = self.loss_fn(scores_sequence, y_sequence)
+                else:
+                    loss += self.loss_fn(scores_sequence, y_sequence)
+
+                pred = scores_sequence.argmax(dim=1)
+                num_correct += (y_sequence == pred).sum()
             # ========================
 
         return BatchResult(loss.item(), num_correct.item() / seq_len)
