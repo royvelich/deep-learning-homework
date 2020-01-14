@@ -103,6 +103,7 @@ class Trainer(abc.ABC):
                 else:
                     epochs_without_improvement = 0
                     best_test_loss = current_test_loss
+                    save_checkpoint = True
 
             actual_num_epochs += 1
 
@@ -322,14 +323,19 @@ class VAETrainer(Trainer):
         # ====== YOUR CODE: ======
         N = x.shape[0]
         self.optimizer.zero_grad()
-        loss = 0
-        data_loss = 0
         for i in range(N):
-            image = x[i, :, :, :]
-            image_rec = self.model.forward(image)
-            cur_loss, cur_data_loss, _ = self.loss_fn(image_rec, image)
-            loss += cur_loss
-            data_loss += cur_data_loss
+            if i == 0:
+                image = x[i, :, :, :].unsqueeze(0)
+                image_rec, mu, log_sigma2 = self.model(image)
+                xr = image_rec
+            else:
+                image = x[i, :, :, :].unsqueeze(0)
+                image_rec, curr_mu, curr_log_sigma2 = self.model(image)
+                xr = torch.cat([xr, image_rec], dim=0)
+                mu = torch.cat([mu, curr_mu], dim=0)
+                log_sigma2 = torch.cat([log_sigma2, curr_log_sigma2], dim=0)
+
+        loss, data_loss, _ = self.loss_fn(x, xr, mu, log_sigma2)
         loss.backward()
         self.optimizer.step()
         # ========================
@@ -345,14 +351,19 @@ class VAETrainer(Trainer):
             # ====== YOUR CODE: ======
             N = x.shape[0]
             self.optimizer.zero_grad()
-            loss = 0
-            data_loss = 0
             for i in range(N):
-                image = x[i, :, :, :]
-                image_rec = self.model.forward(image)
-                cur_loss, cur_data_loss, _ = self.loss_fn(image_rec, image)
-                loss += cur_loss
-                data_loss += cur_data_loss
+                if i == 0:
+                    image = x[i, :, :, :].unsqueeze(0)
+                    image_rec, mu, log_sigma2 = self.model(image)
+                    xr = image_rec
+                else:
+                    image = x[i, :, :, :].unsqueeze(0)
+                    image_rec, curr_mu, curr_log_sigma2 = self.model(image)
+                    xr = torch.cat([xr, image_rec], dim=0)
+                    mu = torch.cat([mu, curr_mu], dim=0)
+                    log_sigma2 = torch.cat([log_sigma2, curr_log_sigma2], dim=0)
+
+            loss, data_loss, _ = self.loss_fn(x, xr, mu, log_sigma2)
             # ========================
 
         return BatchResult(loss.item(), 1/data_loss.item())

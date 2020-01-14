@@ -26,6 +26,7 @@ class EncoderCNN(nn.Module):
         modules.append(torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=(16, 16)))
         modules.append(nn.ReLU())
         modules.append(torch.nn.Conv2d(in_channels=32, out_channels=out_channels, kernel_size=(16, 16)))
+        modules.append(nn.Tanh())
         # ========================
 
         self.cnn = nn.Sequential(*modules)
@@ -107,9 +108,12 @@ class VAE(nn.Module):
         #  2. Apply the reparametrization trick to obtain z.
         # ====== YOUR CODE: ======
         device = next(self.parameters()).device
+        # print(x)
         h = self.features_encoder(x).reshape(1,-1)
         mu = self.mean_affine(h)
+        # print(h)
         log_sigma2 = self.sigma_affine(h)
+        # print(log_sigma2)
         u = torch.randn(1, self.z_dim).to(device)
         z = mu + u * torch.exp(log_sigma2).to(device)
         # ========================
@@ -150,7 +154,7 @@ class VAE(nn.Module):
                 # h = u + self.mean_affine.bias.to(device)
                 # h_reshaped = h.reshape(*self.features_shape).unsqueeze(0)
                 # x_rec = self.features_decoder(h_reshaped)
-                z = torch.rand(self.z_dim).to(device)
+                z = torch.randn(self.z_dim).to(device)
                 h = self.latent_affine(z)
                 h_reshaped = h.reshape(*self.features_shape).unsqueeze(0)
                 x_rec = self.features_decoder(h_reshaped)
