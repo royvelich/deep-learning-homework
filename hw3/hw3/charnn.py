@@ -194,7 +194,7 @@ def generate_from_model(model, start_sequence, n_chars, char_maps, T):
             onehot_tensor = chars_to_onehot(out_text, char_to_idx).unsqueeze(0)
             output, hidden = model.forward(onehot_tensor.to(dtype=torch.float))
             next_char_scores = output[0, len(start_sequence) + i - 1, :]
-            next_char_prob = hot_softmax(next_char_scores)
+            next_char_prob = hot_softmax(next_char_scores, temperature=T)
             idx = int(torch.multinomial(next_char_prob, 1))
             next_char = idx_to_char[idx]
             out_text = out_text + next_char
@@ -399,10 +399,8 @@ class MultilayerGRU(nn.Module):
             for j in range(seq_len):
                 current_hidden = hidden_per_t[i][j].to(device)
                 current_input = input_per_t[i][j].to(device)
-                # stacked_input = torch.cat([current_input, current_hidden], dim=1)
                 z_act = z_sig(z1(current_input) + z2(current_hidden))
                 r_act = r_sig(r1(current_input) + r2(current_hidden))
-                stacked_masked_input = torch.cat([current_input, r_act * current_hidden], dim=1)
                 g_act = g_tanh(g1(current_input) + g2(current_hidden))
                 h = (z_act * current_hidden + (1 - z_act) * g_act).to(device)
                 hidden_per_t[i].append(h.to(device))

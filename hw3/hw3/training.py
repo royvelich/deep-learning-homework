@@ -230,6 +230,7 @@ class RNNTrainer(Trainer):
         # TODO: Implement modifications to the base method, if needed.
         # ====== YOUR CODE: ======
         self.hidden = None
+        self.counter = 1
         # ========================
         return super().train_epoch(dl_train, **kw)
 
@@ -257,7 +258,10 @@ class RNNTrainer(Trainer):
         B, S, V = x.shape
         self.optimizer.zero_grad()
         output, hidden = self.model.forward(x, self.hidden)
-        self.hidden = hidden
+        # if self.counter == 3:
+        self.hidden = hidden.detach()
+        # else:
+        #     self.hidden = hidden
         num_correct = 0
         for i in range(seq_len):
             y_sequence = y[:, i]
@@ -270,8 +274,9 @@ class RNNTrainer(Trainer):
             pred = scores_sequence.argmax(dim=1)
             num_correct += (y_sequence == pred).sum()
 
-        loss.backward(retain_graph=True)
+        loss.backward()
         self.optimizer.step()
+        self.counter = self.counter + 1
         # ========================
 
         # Note: scaling num_correct by seq_len because each sample has seq_len
