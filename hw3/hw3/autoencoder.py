@@ -143,7 +143,18 @@ class VAE(nn.Module):
             #  Instead of sampling from N(psi(z), sigma2 I), we'll just take
             #  the mean, i.e. psi(z).
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            for i in range(n):
+                # u = torch.rand(self.z_dim).to(device)
+                # print(self.z_dim)
+                # print(self.mean_affine.bias)
+                # h = u + self.mean_affine.bias.to(device)
+                # h_reshaped = h.reshape(*self.features_shape).unsqueeze(0)
+                # x_rec = self.features_decoder(h_reshaped)
+                z = torch.rand(self.z_dim).to(device)
+                h = self.latent_affine(z)
+                h_reshaped = h.reshape(*self.features_shape).unsqueeze(0)
+                x_rec = self.features_decoder(h_reshaped)
+                samples.append(x_rec.squeeze().to('cpu'))
             # ========================
         return samples
 

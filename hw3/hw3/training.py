@@ -320,7 +320,18 @@ class VAETrainer(Trainer):
         x = x.to(self.device)  # Image batch (N,C,H,W)
         # TODO: Train a VAE on one batch.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        N = x.shape[0]
+        self.optimizer.zero_grad()
+        loss = 0
+        data_loss = 0
+        for i in range(N):
+            image = x[i, :, :, :]
+            image_rec = self.model.forward(image)
+            cur_loss, cur_data_loss, _ = self.loss_fn(image_rec, image)
+            loss += cur_loss
+            data_loss += cur_data_loss
+        loss.backward()
+        self.optimizer.step()
         # ========================
 
         return BatchResult(loss.item(), 1/data_loss.item())
@@ -332,7 +343,16 @@ class VAETrainer(Trainer):
         with torch.no_grad():
             # TODO: Evaluate a VAE on one batch.
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            N = x.shape[0]
+            self.optimizer.zero_grad()
+            loss = 0
+            data_loss = 0
+            for i in range(N):
+                image = x[i, :, :, :]
+                image_rec = self.model.forward(image)
+                cur_loss, cur_data_loss, _ = self.loss_fn(image_rec, image)
+                loss += cur_loss
+                data_loss += cur_data_loss
             # ========================
 
         return BatchResult(loss.item(), 1/data_loss.item())
