@@ -94,7 +94,13 @@ class Generator(nn.Module):
         #  Generate n latent space samples and return their reconstructions.
         #  Don't use a loop.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        if not with_grad:
+            with torch.no_grad():
+                z = torch.randn(n, self.z_dim).to(device)
+                samples = self.forward(z)
+        else:
+            z = torch.randn(n, self.z_dim).to(device)
+            samples = self.forward(z)
         # ========================
         return samples
 
@@ -196,7 +202,7 @@ def train_batch(dsc_model: Discriminator, gen_model: Generator,
     #  2. Calculate discriminator loss
     #  3. Update discriminator parameters
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    print(x_data.shape)
     # ========================
 
     # TODO: Generator update
@@ -227,7 +233,11 @@ def save_checkpoint(gen_model, dsc_losses, gen_losses, checkpoint_file):
     #  You should decide what logic to use for deciding when to save.
     #  If you save, set saved to True.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    saved_state = dict(dsc_losses=dsc_losses,
+                       gen_losses=gen_losses,
+                       model_state=gen_model.state_dict())
+    torch.save(saved_state, checkpoint_file)
+    saved = True
     # ========================
 
     return saved
