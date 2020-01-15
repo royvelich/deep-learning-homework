@@ -23,11 +23,14 @@ class Discriminator(nn.Module):
         # ====== YOUR CODE: ======
         modules = []
         modules.append(torch.nn.Conv2d(in_channels=in_size[0], out_channels=8, kernel_size=(16, 16)))
-        modules.append(nn.ReLU())
+        modules.append(torch.nn.Dropout2d(0.4))
+        modules.append(nn.LeakyReLU())
         modules.append(torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=(16, 16)))
-        modules.append(nn.ReLU())
+        modules.append(torch.nn.Dropout2d(0.4))
+        modules.append(nn.LeakyReLU())
         modules.append(torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=(16, 16)))
-        modules.append(nn.ReLU())
+        modules.append(torch.nn.Dropout2d(0.4))
+        modules.append(nn.LeakyReLU())
         modules.append(torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(16, 16)))
         self.cnn = nn.Sequential(*modules)
         self.flat_dim = 64*4*4
@@ -71,11 +74,14 @@ class Generator(nn.Module):
         self.affine = nn.Linear(z_dim, featuremap_size*featuremap_size)
         modules = []
         modules.append(torch.nn.ConvTranspose2d(in_channels=1, out_channels=64, kernel_size=(16, 16)))
-        modules.append(nn.ReLU())
+        modules.append(torch.nn.Dropout2d(0.4))
+        modules.append(nn.LeakyReLU())
         modules.append(torch.nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=(16, 16)))
-        modules.append(nn.ReLU())
+        modules.append(torch.nn.Dropout2d(0.4))
+        modules.append(nn.LeakyReLU())
         modules.append(torch.nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=(16, 16)))
-        modules.append(nn.ReLU())
+        modules.append(torch.nn.Dropout2d(0.4))
+        modules.append(nn.LeakyReLU())
         modules.append(torch.nn.ConvTranspose2d(in_channels=16, out_channels=out_channels, kernel_size=(16, 16)))
         self.cnn = nn.Sequential(*modules)
         # ========================
@@ -143,18 +149,18 @@ def discriminator_loss_fn(y_data, y_generated, data_label=0, label_noise=0.0):
     # ====== YOUR CODE: ======
     data_loss_fn = torch.nn.BCEWithLogitsLoss()
     generated_loss_fn = torch.nn.BCEWithLogitsLoss()
-    data_labels_noise = (torch.rand(y_data.shape[0]) * label_noise) - (label_noise/2)
-    generated_labels_noise = (torch.rand(y_data.shape[0]) * label_noise) - (label_noise/2)
+    data_labels_noise = ((torch.rand(*y_data.shape) * label_noise) - (label_noise/2)).cuda()
+    generated_labels_noise = ((torch.rand(*y_data.shape) * label_noise) - (label_noise/2)).cuda()
 
     if data_label == 1:
-        data_labels = torch.ones_like(y_data) + data_labels_noise
-        generated_labels = torch.zeros_like(y_generated) + generated_labels_noise
+        data_labels = torch.ones_like(y_data).cuda() + data_labels_noise
+        generated_labels = torch.zeros_like(y_generated).cuda() + generated_labels_noise
     else:
         data_labels = torch.zeros_like(y_data) + data_labels_noise
         generated_labels = torch.ones_like(y_generated) + generated_labels_noise
 
-    loss_data = data_loss_fn(y_data, data_labels)
-    loss_generated = generated_loss_fn(y_generated, generated_labels)
+    loss_data = data_loss_fn(y_data.cuda(), data_labels.cuda())
+    loss_generated = generated_loss_fn(y_generated.cuda(), generated_labels.cuda())
     # ========================
     return loss_data + loss_generated
 
@@ -202,7 +208,13 @@ def train_batch(dsc_model: Discriminator, gen_model: Generator,
     #  2. Calculate discriminator loss
     #  3. Update discriminator parameters
     # ====== YOUR CODE: ======
-    print(x_data.shape)
+    n = x_data.shape[0]
+    x_generated = gen_model.sample(n, with_grad=False)
+    real_scores = dsc_model(x_data)
+    fake_scores = dsc_model(x_generated)
+    dsc_loss = dsc_loss_fn(real_scores, fake_scores)
+    dsc_loss.backward()
+    dsc_optimizer.step()
     # ========================
 
     # TODO: Generator update
@@ -210,7 +222,11 @@ def train_batch(dsc_model: Discriminator, gen_model: Generator,
     #  2. Calculate generator loss
     #  3. Update generator parameters
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    x_generated2 = gen_model.sample(n, with_grad=True)
+    fake_scores2 = dsc_model(x_generated2)
+    gen_loss = gen_loss_fn(fake_scores2)
+    gen_loss.backward()
+    gen_optimizer.step()
     # ========================
 
     return dsc_loss.item(), gen_loss.item()
@@ -233,11 +249,11 @@ def save_checkpoint(gen_model, dsc_losses, gen_losses, checkpoint_file):
     #  You should decide what logic to use for deciding when to save.
     #  If you save, set saved to True.
     # ====== YOUR CODE: ======
-    saved_state = dict(dsc_losses=dsc_losses,
-                       gen_losses=gen_losses,
-                       model_state=gen_model.state_dict())
-    torch.save(saved_state, checkpoint_file)
-    saved = True
+    # saved_state = dict(dsc_losses=dsc_losses,
+    #                    gen_losses=gen_losses,
+    #                    model_state=gen_model.state_dict())
+    # torch.save(saved_state, checkpoint_file)
+    # saved = True
     # ========================
 
     return saved
