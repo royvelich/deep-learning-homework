@@ -256,13 +256,9 @@ class RNNTrainer(Trainer):
         #  - Update params
         #  - Calculate number of correct char predictions
         # ====== YOUR CODE: ======
-        B, S, V = x.shape
         self.optimizer.zero_grad()
         output, hidden = self.model.forward(x, self.hidden)
-        # if self.counter == 3:
         self.hidden = hidden.detach()
-        # else:
-        #     self.hidden = hidden
         num_correct = 0
         for i in range(seq_len):
             y_sequence = y[:, i]

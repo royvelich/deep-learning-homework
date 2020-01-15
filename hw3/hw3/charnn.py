@@ -283,15 +283,15 @@ class MultilayerGRU(nn.Module):
             if i == 0:
                 current_in_dim = in_dim
 
-            z1 = torch.nn.Linear(current_in_dim, h_dim, bias=False)
+            z1 = torch.nn.Linear(current_in_dim, h_dim)
             z2 = torch.nn.Linear(h_dim, h_dim)
             z_sig = torch.nn.Sigmoid()
 
-            r1 = torch.nn.Linear(current_in_dim, h_dim, bias=False)
+            r1 = torch.nn.Linear(current_in_dim, h_dim)
             r2 = torch.nn.Linear(h_dim, h_dim)
             r_sig = torch.nn.Sigmoid()
 
-            g1 = torch.nn.Linear(current_in_dim, h_dim, bias=False)
+            g1 = torch.nn.Linear(current_in_dim, h_dim)
             g2 = torch.nn.Linear(h_dim, h_dim)
             g_tanh = torch.nn.Tanh()
 
@@ -401,7 +401,7 @@ class MultilayerGRU(nn.Module):
                 current_input = input_per_t[i][j].to(device)
                 z_act = z_sig(z1(current_input) + z2(current_hidden))
                 r_act = r_sig(r1(current_input) + r2(current_hidden))
-                g_act = g_tanh(g1(current_input) + g2(current_hidden))
+                g_act = g_tanh(g1(current_input) + g2(current_hidden * r_act))
                 h = (z_act * current_hidden + (1 - z_act) * g_act).to(device)
                 hidden_per_t[i].append(h.to(device))
                 input_per_t[i+1].append(d(h.to(device)))
