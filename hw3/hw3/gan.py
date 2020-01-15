@@ -21,7 +21,17 @@ class Discriminator(nn.Module):
         #  You can then use either an affine layer or another conv layer to
         #  flatten the features.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        modules = []
+        modules.append(torch.nn.Conv2d(in_channels=in_size[0], out_channels=8, kernel_size=(16, 16)))
+        modules.append(nn.ReLU())
+        modules.append(torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=(16, 16)))
+        modules.append(nn.ReLU())
+        modules.append(torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=(16, 16)))
+        modules.append(nn.ReLU())
+        modules.append(torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(16, 16)))
+        self.cnn = nn.Sequential(*modules)
+        self.flat_dim = 64*4*4
+        self.affine = nn.Linear(self.flat_dim, 1)
         # ========================
 
     def forward(self, x):
@@ -34,7 +44,9 @@ class Discriminator(nn.Module):
         #  No need to apply sigmoid to obtain probability - we'll combine it
         #  with the loss due to improved numerical stability.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        features = self.cnn(x)
+        features_flat = features.reshape(x.shape[0], self.flat_dim)
+        y = self.affine(features_flat)
         # ========================
         return y
 
@@ -55,7 +67,17 @@ class Generator(nn.Module):
         #  section or implement something new.
         #  You can assume a fixed image size.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        self.featuremap_size = featuremap_size
+        self.affine = nn.Linear(z_dim, featuremap_size*featuremap_size)
+        modules = []
+        modules.append(torch.nn.ConvTranspose2d(in_channels=1, out_channels=64, kernel_size=(16, 16)))
+        modules.append(nn.ReLU())
+        modules.append(torch.nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=(16, 16)))
+        modules.append(nn.ReLU())
+        modules.append(torch.nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=(16, 16)))
+        modules.append(nn.ReLU())
+        modules.append(torch.nn.ConvTranspose2d(in_channels=16, out_channels=out_channels, kernel_size=(16, 16)))
+        self.cnn = nn.Sequential(*modules)
         # ========================
 
     def sample(self, n, with_grad=False):
@@ -86,7 +108,9 @@ class Generator(nn.Module):
         #  Don't forget to make sure the output instances have the same
         #  dynamic range as the original (real) images.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        features = self.affine(z)
+        features_reshaped = features.reshape(z.shape[0], 1, self.featuremap_size, self.featuremap_size)
+        x = torch.tanh(self.cnn(features_reshaped))
         # ========================
         return x
 
