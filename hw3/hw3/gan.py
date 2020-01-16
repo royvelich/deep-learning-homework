@@ -23,14 +23,14 @@ class Discriminator(nn.Module):
         # ====== YOUR CODE: ======
         modules = []
         modules.append(torch.nn.Conv2d(in_channels=in_size[0], out_channels=8, kernel_size=(16, 16)))
-        modules.append(torch.nn.Dropout2d(0.4))
         modules.append(nn.LeakyReLU())
+        modules.append(torch.nn.Dropout2d(0.5))
         modules.append(torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=(16, 16)))
-        modules.append(torch.nn.Dropout2d(0.4))
         modules.append(nn.LeakyReLU())
+        modules.append(torch.nn.Dropout2d(0.5))
         modules.append(torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=(16, 16)))
-        modules.append(torch.nn.Dropout2d(0.4))
         modules.append(nn.LeakyReLU())
+        modules.append(torch.nn.Dropout2d(0.5))
         modules.append(torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(16, 16)))
         self.cnn = nn.Sequential(*modules)
         self.flat_dim = 64*4*4
@@ -73,16 +73,29 @@ class Generator(nn.Module):
         self.featuremap_size = featuremap_size
         self.affine = nn.Linear(z_dim, featuremap_size*featuremap_size)
         modules = []
-        modules.append(torch.nn.ConvTranspose2d(in_channels=1, out_channels=64, kernel_size=(16, 16)))
-        modules.append(torch.nn.Dropout2d(0.4))
+        modules.append(torch.nn.BatchNorm2d(1))
+        modules.append(torch.nn.Upsample(scale_factor=2))
+        modules.append(torch.nn.Conv2d(in_channels=1, out_channels=128, kernel_size=3, stride=1, padding=1))
         modules.append(nn.LeakyReLU())
-        modules.append(torch.nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=(16, 16)))
-        modules.append(torch.nn.Dropout2d(0.4))
+        modules.append(torch.nn.BatchNorm2d(128, 0.8))
+        modules.append(torch.nn.Upsample(scale_factor=2))
+        modules.append(torch.nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1))
         modules.append(nn.LeakyReLU())
-        modules.append(torch.nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=(16, 16)))
-        modules.append(torch.nn.Dropout2d(0.4))
+        modules.append(torch.nn.BatchNorm2d(128, 0.8))
+        modules.append(torch.nn.Upsample(scale_factor=2))
+        modules.append(torch.nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1))
         modules.append(nn.LeakyReLU())
-        modules.append(torch.nn.ConvTranspose2d(in_channels=16, out_channels=out_channels, kernel_size=(16, 16)))
+        modules.append(torch.nn.BatchNorm2d(128, 0.8))
+        modules.append(torch.nn.Upsample(scale_factor=2))
+        modules.append(torch.nn.Conv2d(in_channels=128, out_channels=3, kernel_size=3, stride=1, padding=1))
+        modules.append(nn.Tanh())
+
+        # modules.append(torch.nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=(16, 16)))
+        # modules.append(nn.LeakyReLU())
+        # modules.append(torch.nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=(16, 16)))
+        # modules.append(nn.LeakyReLU())
+        # modules.append(torch.nn.ConvTranspose2d(in_channels=16, out_channels=out_channels, kernel_size=(16, 16)))
+
         self.cnn = nn.Sequential(*modules)
         # ========================
 
@@ -101,9 +114,8 @@ class Generator(nn.Module):
         #  Don't use a loop.
         # ====== YOUR CODE: ======
         if not with_grad:
-            with torch.no_grad():
-                z = torch.randn(n, self.z_dim).to(device)
-                samples = self.forward(z)
+            z = torch.randn(n, self.z_dim).to(device)
+            samples = self.forward(z).detach()
         else:
             z = torch.randn(n, self.z_dim).to(device)
             samples = self.forward(z)
@@ -122,7 +134,7 @@ class Generator(nn.Module):
         # ====== YOUR CODE: ======
         features = self.affine(z)
         features_reshaped = features.reshape(z.shape[0], 1, self.featuremap_size, self.featuremap_size)
-        x = torch.tanh(self.cnn(features_reshaped))
+        x = self.cnn(features_reshaped)
         # ========================
         return x
 
@@ -209,6 +221,7 @@ def train_batch(dsc_model: Discriminator, gen_model: Generator,
     #  3. Update discriminator parameters
     # ====== YOUR CODE: ======
     n = x_data.shape[0]
+    dsc_optimizer.zero_grad()
     x_generated = gen_model.sample(n, with_grad=False)
     real_scores = dsc_model(x_data)
     fake_scores = dsc_model(x_generated)
@@ -222,6 +235,8 @@ def train_batch(dsc_model: Discriminator, gen_model: Generator,
     #  2. Calculate generator loss
     #  3. Update generator parameters
     # ====== YOUR CODE: ======
+    # for i in range(2):
+    gen_optimizer.zero_grad()
     x_generated2 = gen_model.sample(n, with_grad=True)
     fake_scores2 = dsc_model(x_generated2)
     gen_loss = gen_loss_fn(fake_scores2)
