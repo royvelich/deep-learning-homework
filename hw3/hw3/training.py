@@ -103,8 +103,8 @@ class Trainer(abc.ABC):
                 else:
                     epochs_without_improvement = 0
                     best_test_loss = current_test_loss
-                    save_checkpoint = True
 
+            save_checkpoint = True
             actual_num_epochs += 1
 
             if epochs_without_improvement == early_stopping:

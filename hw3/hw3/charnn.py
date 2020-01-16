@@ -191,7 +191,7 @@ def generate_from_model(model, start_sequence, n_chars, char_maps, T):
     # ====== YOUR CODE: ======
     with torch.no_grad():
         for i in range(n_chars - len(start_sequence)):
-            onehot_tensor = chars_to_onehot(out_text, char_to_idx).unsqueeze(0)
+            onehot_tensor = chars_to_onehot(out_text, char_to_idx).unsqueeze(0).to(device)
             output, hidden = model.forward(onehot_tensor.to(dtype=torch.float))
             next_char_scores = output[0, len(start_sequence) + i - 1, :]
             next_char_prob = hot_softmax(next_char_scores, temperature=T)
@@ -283,15 +283,15 @@ class MultilayerGRU(nn.Module):
             if i == 0:
                 current_in_dim = in_dim
 
-            z1 = torch.nn.Linear(current_in_dim, h_dim)
+            z1 = torch.nn.Linear(current_in_dim, h_dim, bias=False)
             z2 = torch.nn.Linear(h_dim, h_dim)
             z_sig = torch.nn.Sigmoid()
 
-            r1 = torch.nn.Linear(current_in_dim, h_dim)
+            r1 = torch.nn.Linear(current_in_dim, h_dim, bias=False)
             r2 = torch.nn.Linear(h_dim, h_dim)
             r_sig = torch.nn.Sigmoid()
 
-            g1 = torch.nn.Linear(current_in_dim, h_dim)
+            g1 = torch.nn.Linear(current_in_dim, h_dim, bias=False)
             g2 = torch.nn.Linear(h_dim, h_dim)
             g_tanh = torch.nn.Tanh()
 
