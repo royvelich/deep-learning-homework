@@ -28,12 +28,12 @@ class Discriminator(nn.Module):
         modules.append(torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(16, 16)))
         modules.append(nn.LeakyReLU())
         modules.append(torch.nn.Dropout2d(0.5))
-        modules.append(torch.nn.Conv2d(in_channels=64, out_channels=128, kernel_size=(16, 16)))
+        modules.append(torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(16, 16)))
         modules.append(nn.LeakyReLU())
         modules.append(torch.nn.Dropout2d(0.5))
-        modules.append(torch.nn.Conv2d(in_channels=128, out_channels=128, kernel_size=(16, 16)))
+        modules.append(torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(16, 16)))
         self.cnn = nn.Sequential(*modules)
-        self.flat_dim = 128*4*4
+        self.flat_dim = 64*4*4
         self.affine = nn.Linear(self.flat_dim, 1)
         # ========================
 
@@ -264,11 +264,8 @@ def save_checkpoint(gen_model, dsc_losses, gen_losses, checkpoint_file):
     #  You should decide what logic to use for deciding when to save.
     #  If you save, set saved to True.
     # ====== YOUR CODE: ======
-    # saved_state = dict(dsc_losses=dsc_losses,
-    #                    gen_losses=gen_losses,
-    #                    model_state=gen_model.state_dict())
-    # torch.save(saved_state, checkpoint_file)
-    # saved = True
+    torch.save(gen_model, checkpoint_file)
+    saved = True
     # ========================
 
     return saved
