@@ -22,18 +22,18 @@ class Discriminator(nn.Module):
         #  flatten the features.
         # ====== YOUR CODE: ======
         modules = []
-        modules.append(torch.nn.Conv2d(in_channels=in_size[0], out_channels=8, kernel_size=(16, 16)))
-        modules.append(nn.LeakyReLU())
-        modules.append(torch.nn.Dropout2d(0.5))
-        modules.append(torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=(16, 16)))
-        modules.append(nn.LeakyReLU())
-        modules.append(torch.nn.Dropout2d(0.5))
-        modules.append(torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=(16, 16)))
+        modules.append(torch.nn.Conv2d(in_channels=in_size[0], out_channels=32, kernel_size=(16, 16)))
         modules.append(nn.LeakyReLU())
         modules.append(torch.nn.Dropout2d(0.5))
         modules.append(torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(16, 16)))
+        modules.append(nn.LeakyReLU())
+        modules.append(torch.nn.Dropout2d(0.5))
+        modules.append(torch.nn.Conv2d(in_channels=64, out_channels=128, kernel_size=(16, 16)))
+        modules.append(nn.LeakyReLU())
+        modules.append(torch.nn.Dropout2d(0.5))
+        modules.append(torch.nn.Conv2d(in_channels=128, out_channels=128, kernel_size=(16, 16)))
         self.cnn = nn.Sequential(*modules)
-        self.flat_dim = 64*4*4
+        self.flat_dim = 128*4*4
         self.affine = nn.Linear(self.flat_dim, 1)
         # ========================
 
