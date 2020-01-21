@@ -190,10 +190,18 @@ def generate_from_model(model, start_sequence, n_chars, char_maps, T):
     #  See torch.no_grad().
     # ====== YOUR CODE: ======
     with torch.no_grad():
+        hidden_layers = [None]
         for i in range(n_chars - len(start_sequence)):
-            onehot_tensor = chars_to_onehot(out_text, char_to_idx).unsqueeze(0).to(device)
-            output, hidden = model.forward(onehot_tensor.to(dtype=torch.float))
-            next_char_scores = output[0, len(start_sequence) + i - 1, :]
+            if i == 0:
+                onehot_tensor = chars_to_onehot(start_sequence, char_to_idx).unsqueeze(0).to(device)
+            else:
+                onehot_tensor = chars_to_onehot(str(next_char), char_to_idx).unsqueeze(0).to(device)
+            output, hidden = model.forward(onehot_tensor.to(dtype=torch.float), hidden_layers[i])
+            hidden_layers.append(hidden)
+            if i == 0:
+                next_char_scores = output[0, len(start_sequence) + i - 1, :]
+            else:
+                next_char_scores = output[0, 0, :]
             next_char_prob = hot_softmax(next_char_scores, temperature=T)
             idx = int(torch.multinomial(next_char_prob, 1))
             next_char = idx_to_char[idx]
@@ -299,29 +307,30 @@ class MultilayerGRU(nn.Module):
 
             self.add_module('z1' + str(i), z1)
             self.add_module('z2' + str(i), z2)
-            self.add_module('z_sig' + str(i), z_sig)
+            # self.add_module('z_sig' + str(i), z_sig)
 
             self.add_module('r1' + str(i), r1)
             self.add_module('r2' + str(i), r2)
-            self.add_module('r_sig' + str(i), r_sig)
+            # self.add_module('r_sig' + str(i), r_sig)
 
             self.add_module('g1' + str(i), g1)
             self.add_module('g2' + str(i), g2)
-            self.add_module('g_tanh' + str(i), g_tanh)
+            # self.add_module('g_tanh' + str(i), g_tanh)
 
-            self.add_module('d' + str(i), d)
+            # self.add_module('d' + str(i), d)
 
             params = {
                 'z1': z1,
                 'z2': z2,
-                'z_sig': z_sig,
+                # 'z_sig': z_sig,
                 'r1': r1,
                 'r2': r2,
-                'r_sig': r_sig,
+                # 'r_sig': r_sig,
                 'g1': g1,
                 'g2': g2,
-                'g_tanh': g_tanh,
-                'd': d
+                # 'g_tanh': g_tanh,
+                # 'd': d
+                'dropout': dropout
             }
 
             self.layer_params.append(params)
@@ -376,34 +385,38 @@ class MultilayerGRU(nn.Module):
         for i in range(seq_len):
             input_per_t[0].append(layer_input[:, i, :])
 
-        hidden_per_t = []
+        hidden_per_layer = []
         for i in range(self.n_layers):
-            hidden_per_t.append([])
-            hidden_per_t[i].append(layer_states[i])
+            hidden_per_layer.append([])
+            hidden_per_layer[i].append(layer_states[i])
 
         for i in range(self.n_layers):
             params = self.layer_params[i]
             z1 = params['z1']
             z2 = params['z2']
-            z_sig = params['z_sig']
+            # z_sig = params['z_sig']
+            z_sig = torch.nn.Sigmoid()
 
             r1 = params['r1']
             r2 = params['r2']
-            r_sig = params['r_sig']
+            # r_sig = params['r_sig']
+            r_sig = torch.nn.Sigmoid()
 
             g1 = params['g1']
             g2 = params['g2']
-            g_tanh = params['g_tanh']
+            # g_tanh = params['g_tanh']
+            g_tanh = torch.nn.Tanh()
 
-            d = params['d']
+            dropout = params['dropout']
+            d = torch.nn.Dropout2d(dropout)
             for j in range(seq_len):
-                current_hidden = hidden_per_t[i][j].to(device)
+                current_hidden = hidden_per_layer[i][j].to(device)
                 current_input = input_per_t[i][j].to(device)
                 z_act = z_sig(z1(current_input) + z2(current_hidden))
                 r_act = r_sig(r1(current_input) + r2(current_hidden))
                 g_act = g_tanh(g1(current_input) + g2(current_hidden * r_act))
                 h = (z_act * current_hidden + (1 - z_act) * g_act).to(device)
-                hidden_per_t[i].append(h.to(device))
+                hidden_per_layer[i].append(h.to(device))
                 input_per_t[i+1].append(d(h.to(device)))
 
         last_output_layer = input_per_t[self.n_layers]
@@ -413,7 +426,7 @@ class MultilayerGRU(nn.Module):
 
         hidden_sequence = []
         for i in range(self.n_layers):
-            hidden_sequence.append(hidden_per_t[i][seq_len-1].to(device))
+            hidden_sequence.append(hidden_per_layer[i][-1].to(device))
 
         for i in range(seq_len):
             if i == 0:

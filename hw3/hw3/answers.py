@@ -21,9 +21,9 @@ def part1_rnn_hyperparams():
     hypers['h_dim'] = 128
     hypers['n_layers'] = 2
     hypers['dropout'] = 0.5
-    hypers['learn_rate'] = 0.01
+    hypers['learn_rate'] = 0.001
     hypers['lr_sched_factor'] = 0.1
-    hypers['lr_sched_patience'] = 3
+    hypers['lr_sched_patience'] = 4
     # ========================
     return hypers
 
