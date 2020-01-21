@@ -293,43 +293,27 @@ class MultilayerGRU(nn.Module):
 
             z1 = torch.nn.Linear(current_in_dim, h_dim, bias=False)
             z2 = torch.nn.Linear(h_dim, h_dim)
-            z_sig = torch.nn.Sigmoid()
 
             r1 = torch.nn.Linear(current_in_dim, h_dim, bias=False)
             r2 = torch.nn.Linear(h_dim, h_dim)
-            r_sig = torch.nn.Sigmoid()
 
             g1 = torch.nn.Linear(current_in_dim, h_dim, bias=False)
             g2 = torch.nn.Linear(h_dim, h_dim)
-            g_tanh = torch.nn.Tanh()
-
-            d = torch.nn.Dropout2d(dropout)
 
             self.add_module('z1' + str(i), z1)
             self.add_module('z2' + str(i), z2)
-            # self.add_module('z_sig' + str(i), z_sig)
-
             self.add_module('r1' + str(i), r1)
             self.add_module('r2' + str(i), r2)
-            # self.add_module('r_sig' + str(i), r_sig)
-
             self.add_module('g1' + str(i), g1)
             self.add_module('g2' + str(i), g2)
-            # self.add_module('g_tanh' + str(i), g_tanh)
-
-            # self.add_module('d' + str(i), d)
 
             params = {
                 'z1': z1,
                 'z2': z2,
-                # 'z_sig': z_sig,
                 'r1': r1,
                 'r2': r2,
-                # 'r_sig': r_sig,
                 'g1': g1,
                 'g2': g2,
-                # 'g_tanh': g_tanh,
-                # 'd': d
                 'dropout': dropout
             }
 
@@ -394,17 +378,14 @@ class MultilayerGRU(nn.Module):
             params = self.layer_params[i]
             z1 = params['z1']
             z2 = params['z2']
-            # z_sig = params['z_sig']
             z_sig = torch.nn.Sigmoid()
 
             r1 = params['r1']
             r2 = params['r2']
-            # r_sig = params['r_sig']
             r_sig = torch.nn.Sigmoid()
 
             g1 = params['g1']
             g2 = params['g2']
-            # g_tanh = params['g_tanh']
             g_tanh = torch.nn.Tanh()
 
             dropout = params['dropout']
