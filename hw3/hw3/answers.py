@@ -167,7 +167,7 @@ def part3_gan_hyperparams():
 part3_q1 = r"""
 **Your answer:**
 
-When we train the *discriminator*, we want to supply it with a real sample and a fake sample. Therefore, in order to
+When we train the discriminator, we want to supply it with a real sample and a fake sample. Therefore, in order to
 create the fake sample, we use the generator to generate one. However, after the forward discriminator forward pass,
 we don't want gradients to pass back through the generator, since we want to train ONLY the discriminator. Therefore,
 we detach the generator's output from the graph in order to prevent gradients to pass back through it.
