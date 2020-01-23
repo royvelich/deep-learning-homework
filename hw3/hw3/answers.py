@@ -41,39 +41,24 @@ def part1_generation_params():
 part1_q1 = r"""
 **Your answer:**
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+We split the corpus into sequences instead of training on the whole text in order to avoid vanishing or exploding
+gradients, and because we usually cannot fit the whole corpus into the GPU memory.
 
 """
 
 part1_q2 = r"""
 **Your answer:**
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+It is possible that the generated text shows memory longer than the sequence length because we are
+propagating the hidden state between sequences, and that way we keep the context of previous characters seen.
 
 """
 
 part1_q3 = r"""
 **Your answer:**
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+We are not shuffling the order of batches when training, because we want to keep semantic context of the
+hidden layer between adjacent sequences.
 
 """
 
