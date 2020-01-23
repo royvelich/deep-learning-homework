@@ -104,26 +104,24 @@ def part2_vae_hyperparams():
 part2_q1 = r"""
 **Your answer:**
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+The hyper-parameter σ2 governs the relative strength of the two lose function terms. The smaller is σ2, the more the
+regression term dominates over the regularization term.
 
 """
 
 part2_q2 = r"""
 **Your answer:**
 
+1. The first term can be thought of as a data fitting term like in regression, demanding that the encoder-decoder
+combination is nearly an identity map, that is, we it measures how good the decoder reconstruct the input samples.
+The second term applies regularization on the output of the encoder in the latent space. That is, it measures the
+divergence of the latent space distribution from the standard normal distribution.
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+2. The smaller the KL loss term, the closer the latent-space distribution to the standard normal distribution.
+
+3. The benefit of this is that it allows us to sample a random vector from the known standard normal distribution
+in order to generate a sample which lays on the higher-dimension manifold from which we have taken our training
+samples.
 
 """
 
@@ -167,39 +165,34 @@ def part3_gan_hyperparams():
 part3_q1 = r"""
 **Your answer:**
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+When we train the *discriminator*, we want to supply it with a real sample and a fake sample. Therefore, in order to
+create the fake sample, we use the generator to generate one. However, after the forward discriminator forward pass,
+we don't want gradients to pass back through the generator, since we want to train ONLY the discriminator. Therefore,
+we detach the generator's output from the graph in order to prevent gradients to pass back through it.
+When we want to train the generator, we do want gradients to pass through it during the backward pass, in order for it
+to learn how to generator realistic fake samples.
 
 """
 
 part3_q2 = r"""
 **Your answer:**
 
+1. When we train a GAN, our criteria to stop training should be based both on the the loss values of the
+generator AND the discriminator. That is because we want both of them to be of equal "strength". We want that the
+probability of the discriminator to distinguish between a real sample a fake sample to be 50%, that is, that it will be
+equivalent to a coin flip.
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+2. If the discriminator loss remains at a constant value while the generator loss decreases, it means that the generator
+is still learning how generate realistic samples, but still not as good as is required to fool the discriminator.
 
 """
 
 part3_q3 = r"""
 **Your answer:**
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+The main difference between the GAN and the VAE results, is that the VAE results seem to be much more blurry than the
+GAN results. That is, the GAN has the potential to produce sharp realistic images. That is because the GAN implicitly
+receives an additional feedback from the discriminator which directs it to create realistic samples.
 
 """
 
