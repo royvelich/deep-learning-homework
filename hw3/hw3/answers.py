@@ -65,13 +65,15 @@ hidden layer between adjacent sequences.
 part1_q4 = r"""
 **Your answer:**
 
+1. We lower the temperature for sampling, since we want to "sharpen" the next character distribution, such that the
+multinomial sampling will have higher chances to sample the character with the highest original
+distribution (before the sharpening).
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+2. When the temperature is very high, the probability to generate words which do not exist in the original corpus is
+much higher, since larger number of character will compete to be the next character to be chosen.
+
+3. When the temperature is very low, we will generate a more repetitive text, since we will probably always sample the
+character with the highest probability in the multinomial distribution.
 
 """
 # ==============
