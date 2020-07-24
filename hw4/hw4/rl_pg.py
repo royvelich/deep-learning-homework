@@ -27,15 +27,26 @@ class PolicyNet(nn.Module):
         """
         super().__init__()
 
+        self.in_features = in_features
+        self.out_actions = out_actions
+
         # TODO: Implement a simple neural net to approximate the policy.
-        # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+
+        self.fc = nn.Sequential(
+            nn.Linear(in_features, 512),
+            nn.ReLU(),
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Linear(128, out_actions)
+        )
+
 
     def forward(self, x):
         # TODO: Implement a simple neural net to approximate the policy.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        action_scores = self.fc.forward(x)
         # ========================
         return action_scores
 
@@ -50,7 +61,7 @@ class PolicyNet(nn.Module):
         """
         # TODO: Implement according to docstring.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        net = PolicyNet(8, 4)
         # ========================
         return net.to(device)
 
@@ -87,7 +98,10 @@ class PolicyAgent(object):
         #  Generate the distribution as described above.
         #  Notice that you should use p_net for *inference* only.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        scores = self.p_net.forward(self.curr_state)
+        scores_exp = torch.exp(scores)
+        scores_sum_exp = scores_exp.sum()
+        actions_proba = scores_exp / scores_sum_exp
         # ========================
 
         return actions_proba
@@ -109,7 +123,12 @@ class PolicyAgent(object):
         #  - Generate and return a new experience.
         # ====== YOUR CODE: ======
 
-        raise NotImplementedError()
+        dist = self.current_action_distribution()
+        m = torch.distributions.multinomial.Multinomial(probs=dist)
+        x = m.sample()
+        action = torch.argmax(x)
+        obs, reward, is_done, extra_info = self.env.step(int(action))
+        experience = Experience(state=self.curr_state, action=action, reward=reward, is_done=is_done)
 
         # ========================
         if is_done:
@@ -137,8 +156,19 @@ class PolicyAgent(object):
             #  Create an agent and play the environment for one episode
             #  based on the policy encoded in p_net.
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            env.reset()
+            total_reward = 0
+            total_steps = 0
+            agent = PolicyAgent(env, p_net)
+            curr_exp = agent.step()
+            while not curr_exp.is_done:
+                total_reward += curr_exp.reward
+                total_steps += 1
+                curr_exp = agent.step()
             # ========================
+            reward = total_reward
+            n_steps = total_steps
+        print(f'Played {total_steps} steps. Total reward: {total_reward}')
         return env, n_steps, reward
 
 
