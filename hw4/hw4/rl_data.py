@@ -2,6 +2,7 @@ from typing import NamedTuple, List, Iterator, Tuple, Union, Callable, Iterable
 
 import torch
 import torch.utils.data
+import numpy
 
 
 class Experience(NamedTuple):
@@ -32,14 +33,18 @@ class Episode(object):
         :return: A list of q-values, the same length as the number of
         experiences in this Experience.
         """
-        qvals = []
-
+        qvals = [0] * len(self.experiences)
         # TODO:
         #  Calculate the q(s,a) value of each state in the episode.
         #  Try to implement it in O(n) runtime, where n is the number of
         #  states. Hint: change the order.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+
+        sum_of_Q = 0
+        for i in range(len(self.experiences) - 1, -1, -1):
+            qvals[i] = gamma * sum_of_Q + self.experiences[i].reward
+            sum_of_Q = qvals[i]
+
         # ========================
         return qvals
 
@@ -83,7 +88,71 @@ class TrainBatch(object):
         #   - Calculate the q-values for states in each experience.
         #   - Construct a TrainBatch instance.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+
+        states = []
+        actions = []
+        qvals = []
+        total_rewards = 0
+
+        states_tensor = None
+        actions_tensor = None
+        qvals_tensor = None
+        # print('bla1')
+
+        for episode in episodes:
+            current_qvals = episode.calc_qvals(gamma)
+            for i in range(len(episode.experiences)):
+                experience = episode.experiences[i]
+                state = experience.state
+                action = experience.action
+                qval = current_qvals[i]
+                total_rewards = experience.reward
+
+                print(state)
+                # print(action)
+                # print(qval)
+                # print(total_rewards)
+
+                print(state.shape)
+                print(action.shape)
+                print(qval.shape)
+                print(total_rewards.shape)
+
+
+                if states_tensor is None:
+                    states_tensor = experience.state
+                else:
+                    states_tensor = torch.cat((states_tensor, state), 0)
+
+                if actions_tensor is None:
+                    actions_tensor = action
+                else:
+                    actions_tensor = torch.cat((actions_tensor, action), 0)
+
+                if qvals_tensor is None:
+                    qvals_tensor = qval
+                else:
+                    qvals_tensor = torch.cat((qvals_tensor, qval), 0)
+
+
+        # print('bla2')
+
+        # print(states)
+
+        # states_tensor = torch.Tensor(states)
+        # print('bla3')
+        # actions_tensor = torch.FloatTensor(actions)
+        # print('bla4')
+        # qvals_tensor = torch.FloatTensor(qvals)
+        # print('bla5')
+        total_rewards_tensor = torch.FloatTensor(total_rewards)
+        # print('bla6')
+        train_batch = TrainBatch(states=states_tensor,
+                                 actions=actions_tensor,
+                                 q_vals=qvals_tensor,
+                                 total_rewards=total_rewards_tensor)
+
+        print('bla7')
         # ========================
         return train_batch
 
@@ -141,7 +210,18 @@ class TrainBatchDataset(torch.utils.data.IterableDataset):
             #    by the agent.
             #  - Store Episodes in the curr_batch list.
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            while True:
+                curr_exp = agent.step()
+                episode_reward += curr_exp.reward
+                episode_experiences.append(curr_exp)
+                if curr_exp.is_done:
+                    break
+
+            episode = Episode(episode_reward, episode_experiences)
+            curr_batch.append(episode)
+
+            episode_reward = 0.0
+            episode_experiences = []
             # ========================
             if len(curr_batch) == self.episode_batch_size:
                 yield tuple(curr_batch)
