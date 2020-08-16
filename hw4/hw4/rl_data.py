@@ -89,70 +89,46 @@ class TrainBatch(object):
         #   - Construct a TrainBatch instance.
         # ====== YOUR CODE: ======
 
-        states = []
-        actions = []
-        qvals = []
-        total_rewards = 0
-
         states_tensor = None
         actions_tensor = None
         qvals_tensor = None
-        # print('bla1')
+        total_rewards_tensor = None
 
         for episode in episodes:
             current_qvals = episode.calc_qvals(gamma)
+            total_rewards = 0
             for i in range(len(episode.experiences)):
                 experience = episode.experiences[i]
                 state = experience.state
                 action = experience.action
                 qval = current_qvals[i]
-                total_rewards = experience.reward
-
-                print(state)
-                # print(action)
-                # print(qval)
-                # print(total_rewards)
-
-                print(state.shape)
-                print(action.shape)
-                print(qval.shape)
-                print(total_rewards.shape)
-
+                total_rewards = total_rewards + experience.reward
 
                 if states_tensor is None:
-                    states_tensor = experience.state
+                    states_tensor = experience.state.unsqueeze(0)
                 else:
-                    states_tensor = torch.cat((states_tensor, state), 0)
+                    states_tensor = torch.cat((states_tensor, state.unsqueeze(0)), 0)
 
                 if actions_tensor is None:
-                    actions_tensor = action
+                    actions_tensor = torch.tensor([action])
                 else:
-                    actions_tensor = torch.cat((actions_tensor, action), 0)
+                    actions_tensor = torch.cat((actions_tensor, torch.tensor([action])), 0)
 
                 if qvals_tensor is None:
-                    qvals_tensor = qval
+                    qvals_tensor = torch.tensor([qval])
                 else:
-                    qvals_tensor = torch.cat((qvals_tensor, qval), 0)
+                    qvals_tensor = torch.cat((qvals_tensor, torch.tensor([qval])), 0)
 
+            if total_rewards_tensor is None:
+                total_rewards_tensor = torch.tensor([total_rewards])
+            else:
+                total_rewards_tensor = torch.cat((total_rewards_tensor, torch.tensor([total_rewards])), 0)
 
-        # print('bla2')
-
-        # print(states)
-
-        # states_tensor = torch.Tensor(states)
-        # print('bla3')
-        # actions_tensor = torch.FloatTensor(actions)
-        # print('bla4')
-        # qvals_tensor = torch.FloatTensor(qvals)
-        # print('bla5')
-        total_rewards_tensor = torch.FloatTensor(total_rewards)
-        # print('bla6')
+        total_rewards_tensor = torch.tensor([total_rewards])
         train_batch = TrainBatch(states=states_tensor,
                                  actions=actions_tensor,
                                  q_vals=qvals_tensor,
                                  total_rewards=total_rewards_tensor)
-
-        print('bla7')
         # ========================
         return train_batch
 
