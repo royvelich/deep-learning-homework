@@ -96,7 +96,9 @@ class TrainBatch(object):
 
         for episode in episodes:
             current_qvals = episode.calc_qvals(gamma)
+            #print(current_qvals)
             total_rewards = 0
+            #print(current_qvals)
             for i in range(len(episode.experiences)):
                 experience = episode.experiences[i]
                 state = experience.state
@@ -124,7 +126,8 @@ class TrainBatch(object):
             else:
                 total_rewards_tensor = torch.cat((total_rewards_tensor, torch.tensor([total_rewards])), 0)
 
-        total_rewards_tensor = torch.tensor([total_rewards])
+        #print(qvals_tensor)
+        #total_rewards_tensor = torch.tensor([total_rewards])
         train_batch = TrainBatch(states=states_tensor,
                                  actions=actions_tensor,
                                  q_vals=qvals_tensor,
@@ -134,6 +137,7 @@ class TrainBatch(object):
 
     @property
     def num_episodes(self):
+        #print(self.total_rewards.shape)
         return torch.numel(self.total_rewards)
 
     def __repr__(self):
@@ -191,6 +195,7 @@ class TrainBatchDataset(torch.utils.data.IterableDataset):
                 episode_reward += curr_exp.reward
                 episode_experiences.append(curr_exp)
                 if curr_exp.is_done:
+                    #print("episode is done")
                     break
 
             episode = Episode(episode_reward, episode_experiences)
@@ -200,6 +205,7 @@ class TrainBatchDataset(torch.utils.data.IterableDataset):
             episode_experiences = []
             # ========================
             if len(curr_batch) == self.episode_batch_size:
+                print("finished")
                 yield tuple(curr_batch)
                 curr_batch = []
 

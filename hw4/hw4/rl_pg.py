@@ -124,11 +124,21 @@ class PolicyAgent(object):
         # ====== YOUR CODE: ======
 
         dist = self.current_action_distribution()
-        m = torch.distributions.multinomial.Multinomial(probs=dist)
-        x = m.sample()
-        action = torch.argmax(x)
+        #m = torch.distributions.multinomial.Multinomial(probs=dist)
+        #x = m.sample()
+        #action = torch.argmax(x)
+        #probs = policy_network(state)
+        # Note that this is equivalent to what used to be called multinomial
+        m = torch.distributions.categorical.Categorical(dist)
+        action = m.sample()
+        #print('action:' + str(action))
+        prev_state = self.curr_state
         obs, reward, is_done, extra_info = self.env.step(int(action))
-        experience = Experience(state=self.curr_state, action=action, reward=reward, is_done=is_done)
+        self.curr_state = torch.tensor(obs)
+        #print(obs.shape)
+        #print(self.curr_state.shape)
+
+        experience = Experience(state=prev_state, action=action, reward=reward, is_done=is_done)
 
         # ========================
         if is_done:
@@ -189,7 +199,9 @@ class VanillaPolicyGradientLoss(nn.Module):
         #  Use the helper methods in this class to first calculate the weights
         #  and then the loss using the weights and action scores.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        # raise NotImplementedError()
+        policy_weight = self._policy_weight(batch)
+        loss_p = self._policy_loss(batch, action_scores, policy_weight)
         # ========================
         return loss_p, dict(loss_p=loss_p.item())
 
@@ -198,7 +210,10 @@ class VanillaPolicyGradientLoss(nn.Module):
         #  Return the policy weight term for the causal vanilla PG loss.
         #  This is a tensor of shape (N,).
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        # raise NotImplementedError()
+        policy_weight = batch.q_vals
+        #print(policy_weight)
+        #print(policy_weight.shape)
         # ========================
         return policy_weight
 
@@ -213,7 +228,21 @@ class VanillaPolicyGradientLoss(nn.Module):
         #   different episodes. So, here we'll simply average over the number
         #   of total experiences in our batch.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        # raise NotImplementedError()
+        # log prob on scores
+        #print(action_scores)
+        log_prob = torch.log_softmax(action_scores, dim=1)
+        #print(log_prob)
+        # Select only the log-proba of actions that were actually taken.
+        selected_log_prob = log_prob.gather(1, batch.actions.unsqueeze(-1)).squeeze(-1)
+        #print(selected_log_prob)
+        # calculate weighted average
+        print(selected_log_prob[1])
+        print(policy_weight[1])
+        weighted_selected_log_prob = - policy_weight * selected_log_prob
+        print(weighted_selected_log_prob[1])
+        loss_p = weighted_selected_log_prob.mean()
+        #loss_p = weighted_selected_log_prob.sum() / batch.num_episodes
         # ========================
         return loss_p
 
@@ -231,7 +260,16 @@ class BaselinePolicyGradientLoss(VanillaPolicyGradientLoss):
         #  Calculate the loss and baseline.
         #  Use the helper methods in this class as before.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        #raise NotImplementedError()
+        log_prob = torch.log_softmax(action_scores, dim=1)
+        #print(log_prob)
+        # Select only the log-proba of actions that were actually taken.
+        selected_log_prob = log_prob.gather(1, batch.actions.unsqueeze(-1)).squeeze(-1)
+        #print(selected_log_prob)
+        policy_weight, baseline = self._policy_weight(batch)
+        weighted_selected_log_prob = - (policy_weight - baseline) * selected_log_prob
+        #print(weighted_selected_log_prob[1])
+        loss_p = weighted_selected_log_prob.mean()
         # ========================
         return loss_p, dict(loss_p=loss_p.item(), baseline=baseline.item())
 
@@ -240,7 +278,9 @@ class BaselinePolicyGradientLoss(VanillaPolicyGradientLoss):
         #  Calculate both the policy weight term and the baseline value for
         #  the PG loss with baseline.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        #raise NotImplementedError()
+        policy_weight = batch.q_vals
+        baseline = policy_weight.mean()
         # ========================
         return policy_weight, baseline
 
@@ -264,7 +304,10 @@ class ActionEntropyLoss(nn.Module):
         max_entropy = None
         # TODO: Compute max_entropy.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        pi_a_s = torch.ones([1, n_actions])
+        pi_a_s = 1/n_actions * pi_a_s
+        #print(pi_a_s)
+        max_entropy = -torch.sum(pi_a_s * torch.log(pi_a_s))
         # ========================
         return max_entropy
 
@@ -290,7 +333,13 @@ class ActionEntropyLoss(nn.Module):
         #   - Use pytorch built-in softmax and log_softmax.
         #   - Calculate loss per experience and average over all of them.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        unique_actions, count_actions = torch.unique(batch.actions, return_counts=True)
+        total_actions = torch.sum(count_actions)
+        action_prob = count_actions / (torch.ones([1, torch.numel(unique_actions)]) * total_actions)
+        print(action_prob)
+
+        action_prob_2 = torch.softmax(torch.tensor(count_actions, dtype=float), 0)
+        print(action_prob_2)
         # ========================
 
         loss_e *= self.beta
