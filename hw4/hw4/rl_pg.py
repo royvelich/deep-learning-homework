@@ -333,13 +333,39 @@ class ActionEntropyLoss(nn.Module):
         #   - Use pytorch built-in softmax and log_softmax.
         #   - Calculate loss per experience and average over all of them.
         # ====== YOUR CODE: ======
-        unique_actions, count_actions = torch.unique(batch.actions, return_counts=True)
-        total_actions = torch.sum(count_actions)
-        action_prob = count_actions / (torch.ones([1, torch.numel(unique_actions)]) * total_actions)
-        print(action_prob)
+        #unique_actions, count_actions = torch.unique(batch.actions, return_counts=True)
+        #total_actions = torch.sum(count_actions)
+        #action_prob = count_actions / (torch.ones([1, torch.numel(unique_actions)]) * total_actions)
+        #print(action_prob)
 
-        action_prob_2 = torch.softmax(torch.tensor(count_actions, dtype=float), 0)
-        print(action_prob_2)
+        #action_prob_2 = torch.softmax(torch.tensor(count_actions, dtype=float), -1)
+        #print(action_prob_2)
+        probs_tup = None
+        log_probs_tup = None
+        actions_entropy_tup = None
+        for scores in action_scores:
+            #act_scores = torch.tensor(scores)
+            act_scores = scores.clone().detach()
+            probs = torch.softmax(act_scores, dim=-1)
+            #print(probs)
+            if probs_tup is None:
+                probs_tup = probs.clone().detach()
+            else:
+                probs_tup = torch.cat((probs_tup, probs), 0)
+            log_probs = torch.log_softmax(act_scores, dim=-1)
+            #print(log_probs)
+            if log_probs_tup is None:
+                log_probs_tup = log_probs.clone().detach()
+            else:
+                log_probs_tup = torch.cat((log_probs_tup, log_probs), 0)
+            actions_entropy = torch.sum(probs*log_probs)
+            #print(actions_entropy)
+            if actions_entropy_tup is None:
+                actions_entropy_tup = actions_entropy.unsqueeze(0)
+            else:
+                actions_entropy_tup = torch.cat((actions_entropy_tup, actions_entropy.unsqueeze(0)), 0)
+        avg_entropy = actions_entropy_tup.mean()
+        loss_e = avg_entropy / self.max_entropy
         # ========================
 
         loss_e *= self.beta
