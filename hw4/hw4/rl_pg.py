@@ -33,13 +33,11 @@ class PolicyNet(nn.Module):
         # TODO: Implement a simple neural net to approximate the policy.
 
         self.fc = nn.Sequential(
-            nn.Linear(in_features, 512),
+            nn.Linear(in_features, 32),
+            nn.Tanh(),
+            nn.Linear(32, 32),
             nn.ReLU(),
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Linear(256, 128),
-            nn.ReLU(),
-            nn.Linear(128, out_actions)
+            nn.Linear(32, out_actions)
         )
 
 
@@ -98,10 +96,14 @@ class PolicyAgent(object):
         #  Generate the distribution as described above.
         #  Notice that you should use p_net for *inference* only.
         # ====== YOUR CODE: ======
+        #scores = self.p_net.forward(self.curr_state)
+        #scores_exp = torch.exp(scores)
+        #scores_sum_exp = scores_exp.sum()
+        #actions_proba = scores_exp / scores_sum_exp
+        # Ver 2.0:
+        m = nn.Softmax(dim=-1)
         scores = self.p_net.forward(self.curr_state)
-        scores_exp = torch.exp(scores)
-        scores_sum_exp = scores_exp.sum()
-        actions_proba = scores_exp / scores_sum_exp
+        actions_proba = m(scores)
         # ========================
 
         return actions_proba
@@ -124,13 +126,13 @@ class PolicyAgent(object):
         # ====== YOUR CODE: ======
 
         dist = self.current_action_distribution()
-        #m = torch.distributions.multinomial.Multinomial(probs=dist)
-        #x = m.sample()
-        #action = torch.argmax(x)
+        m = torch.distributions.multinomial.Multinomial(probs=dist)
+        x = m.sample()
+        action = torch.argmax(x)
         #probs = policy_network(state)
         # Note that this is equivalent to what used to be called multinomial
-        m = torch.distributions.categorical.Categorical(dist)
-        action = m.sample()
+        #m = torch.distributions.categorical.Categorical(dist)
+        #action = m.sample()
         #print('action:' + str(action))
         prev_state = self.curr_state
         obs, reward, is_done, extra_info = self.env.step(int(action))
@@ -237,10 +239,10 @@ class VanillaPolicyGradientLoss(nn.Module):
         selected_log_prob = log_prob.gather(1, batch.actions.unsqueeze(-1)).squeeze(-1)
         #print(selected_log_prob)
         # calculate weighted average
-        print(selected_log_prob[1])
-        print(policy_weight[1])
+        # print(selected_log_prob[1])
+        # print(policy_weight[1])
         weighted_selected_log_prob = - policy_weight * selected_log_prob
-        print(weighted_selected_log_prob[1])
+        # print(weighted_selected_log_prob[1])
         loss_p = weighted_selected_log_prob.mean()
         #loss_p = weighted_selected_log_prob.sum() / batch.num_episodes
         # ========================
@@ -333,13 +335,6 @@ class ActionEntropyLoss(nn.Module):
         #   - Use pytorch built-in softmax and log_softmax.
         #   - Calculate loss per experience and average over all of them.
         # ====== YOUR CODE: ======
-        #unique_actions, count_actions = torch.unique(batch.actions, return_counts=True)
-        #total_actions = torch.sum(count_actions)
-        #action_prob = count_actions / (torch.ones([1, torch.numel(unique_actions)]) * total_actions)
-        #print(action_prob)
-
-        #action_prob_2 = torch.softmax(torch.tensor(count_actions, dtype=float), -1)
-        #print(action_prob_2)
         probs_tup = None
         log_probs_tup = None
         actions_entropy_tup = None
@@ -504,7 +499,17 @@ class PolicyTrainer(object):
         #   - Backprop.
         #   - Update model parameters.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        action_scores = self.model.forward(batch.states)
+        for loss_function in self.loss_functions:
+            loss, loss_dict = loss_function.forward(batch, action_scores)
+            losses_dict.update(loss_dict)
+            if total_loss is None:
+                total_loss = loss
+            else:
+                total_loss = total_loss + loss
+
+        total_loss.backward()
+        self.optimizer.step()
         # ========================
 
         return total_loss, losses_dict
