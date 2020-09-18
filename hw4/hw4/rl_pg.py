@@ -103,6 +103,11 @@ class PolicyAgent(object):
         # Ver 2.0:
         m = nn.Softmax(dim=-1)
         scores = self.p_net.forward(self.curr_state)
+        #print(type(scores))
+        #print(scores)
+        #print(scores.shape)
+        if type(scores) is tuple:
+            scores = scores[0]
         actions_proba = m(scores)
         # ========================
 
@@ -134,13 +139,13 @@ class PolicyAgent(object):
         #m = torch.distributions.categorical.Categorical(dist)
         #action = m.sample()
         #print('action:' + str(action))
-        prev_state = self.curr_state
+        #prev_state = self.curr_state
         obs, reward, is_done, extra_info = self.env.step(int(action))
         self.curr_state = torch.tensor(obs)
         #print(obs.shape)
         #print(self.curr_state.shape)
 
-        experience = Experience(state=prev_state, action=action, reward=reward, is_done=is_done)
+        experience = Experience(state=self.curr_state, action=action, reward=reward, is_done=is_done)
 
         # ========================
         if is_done:
@@ -508,6 +513,7 @@ class PolicyTrainer(object):
             else:
                 total_loss = total_loss + loss
 
+        self.optimizer.zero_grad()
         total_loss.backward()
         self.optimizer.step()
         # ========================
